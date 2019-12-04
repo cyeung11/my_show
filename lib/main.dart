@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:my_show/page/home_carousel_page.dart';
 
-import 'network/MyHomePage.dart';
 
 void main(){
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then((_){
@@ -15,10 +15,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'My Show',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.grey,
+        accentColor: Colors.grey,
+        primaryColor: Colors.white,
+        canvasColor: Colors.grey,
       ),
-      home: UpcomingPage(),
+      home: CarouselPage(),
     );
   }
 }

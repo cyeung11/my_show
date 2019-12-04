@@ -1,5 +1,5 @@
-import 'package:my_show/network/base_response.dart';
-import 'package:my_show/network/model/movie.dart';
+import 'package:my_show/network/response/base_response.dart';
+import 'package:my_show/model/movie.dart';
 
 class MovieListResponse extends BaseResponse{
   final int page;
