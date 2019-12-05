@@ -1,13 +1,15 @@
-import 'dart:math';
+
 
 class Movie {
 
   final int id;
-  final String title;
+  final String title; // for movie
+  final String name; // for tv
   final String originalTitle;
   final String overview;
   final String language;
   final String release;
+  final String firstAir;
   final List<int> genres;
   final bool adult;
   final String backdrop;
@@ -30,10 +32,12 @@ class Movie {
     return Movie(
         json['id'],
         json['title'],
+        json['name'],
         json['original_title'],
         json['overview'],
         json['original_language'],
         json['release_date'],
+        json['first_air_date'],
         genres,
         json['adult'],
         json['backdrop_path'],
@@ -45,7 +49,7 @@ class Movie {
     );
   }
 
-  Movie(this.id, this.title, this.originalTitle, this.overview, this.language,
-      this.release, this.genres, this.adult, this.backdrop, this.poster,
+  Movie(this.id, this.title, this.name, this.originalTitle, this.overview, this.language,
+      this.release, this.firstAir, this.genres, this.adult, this.backdrop, this.poster,
       this.popularity, this.voteCount, this.votePoint, this.video);
 }

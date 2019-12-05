@@ -1,11 +1,15 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swiper/flutter_swiper.dart';
+import 'package:my_show/asset_path.dart';
 import 'package:my_show/model/movie.dart';
 import 'package:my_show/network/api_constant.dart';
+import 'package:my_show/page/search_page.dart';
+import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../network/network_call.dart';
@@ -17,7 +21,7 @@ class CarouselPage extends StatefulWidget {
   _CarouselPageState createState() => _CarouselPageState();
 }
 
-class _CarouselPageState extends State<CarouselPage>  with TickerProviderStateMixin{
+class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMixin{
 
   Future<MovieListResponse> movies;
 
@@ -27,27 +31,31 @@ class _CarouselPageState extends State<CarouselPage>  with TickerProviderStateMi
 
   String _dropdownValue = 'UPCOMING';
 
-  Animation<Offset> animation1, animation2, animation3;
-  AnimationController animationController1, animationController2, animationController3;
+  Animation<Offset> _animation1, _animation2, _animation3;
+  AnimationController _animationController1, _animationController2, _animationController3;
 
   @override
   void initState() {
     super.initState();
-    movies = getUpcoming(1);
-    animationController1 = AnimationController(vsync: this, duration: Duration(milliseconds: 500));
-    animationController2 = AnimationController(vsync: this, duration: Duration(milliseconds: 400));
-    animationController3 = AnimationController(vsync: this, duration: Duration(milliseconds: 250));
-    animation1 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(animationController1);
-    animation2 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(animationController2);
-    animation3 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(animationController3);
-  }
-
-  @override
-  Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark.copyWith(
       statusBarColor: Colors.black54, //or set color with: Color(0xFF0000FF)
       statusBarIconBrightness: Brightness.light,
     ));
+
+    _animationController1 = AnimationController(vsync: this, duration: Duration(milliseconds: 350));
+    _animationController2 = AnimationController(vsync: this, duration: Duration(milliseconds: 250));
+    _animationController3 = AnimationController(vsync: this, duration: Duration(milliseconds: 200));
+    _animation1 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(_animationController1);
+    _animation2 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(_animationController2);
+    _animation3 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(_animationController3);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (movies == null) {
+      _reload(context);
+    }
+
     return WillPopScope(
       onWillPop: () async {
         if (_isMenuOverlay){
@@ -63,7 +71,7 @@ class _CarouselPageState extends State<CarouselPage>  with TickerProviderStateMi
             future: movies,
             builder: (context, snapshot){
               return Stack(
-                children: buildBody(snapshot),
+                children: buildBody(context, snapshot),
               );
             },
           ),
@@ -72,65 +80,12 @@ class _CarouselPageState extends State<CarouselPage>  with TickerProviderStateMi
     );
   }
 
-  List<Widget> buildBody(AsyncSnapshot<MovieListResponse> snapshot){
+  List<Widget> buildBody(BuildContext context, AsyncSnapshot<MovieListResponse> snapshot){
     var bodies = List<Widget>();
     bodies.add(
         Column(
           mainAxisSize: MainAxisSize.max,
           children: <Widget>[
-            Container(
-              color: Colors.black54,
-              child:  Flex(
-                direction: Axis.horizontal,
-                children: <Widget>[
-                  Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: DropdownButton<String>(
-                        value: _dropdownValue,
-                        underline: SizedBox(),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16
-                        ),
-                        onChanged: (String newValue) {
-                          setState(() {
-                            if (_dropdownValue != newValue) {
-                              _dropdownValue = newValue;
-                              if (newValue == "UPCOMING") {
-                                movies = getUpcoming(1);
-                              } else {
-                                movies = getPopular(1);
-                              }
-                            }
-                          });
-                        },
-                        items: <String>['UPCOMING', 'POPULAR']
-                            .map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  Spacer(
-                    flex: 1,
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.menu,
-                      size: 30,
-                      color: Colors.white,
-                    ),
-                    onPressed: (){
-                      setState(() {
-                        _isMenuOverlay = true;
-                      });
-                    },
-                  ),
-                ],
-              ),
-            ),
             Container(
               decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -146,19 +101,73 @@ class _CarouselPageState extends State<CarouselPage>  with TickerProviderStateMi
               padding: EdgeInsets.only(bottom: 5),
               height: 380,
               alignment: Alignment.center,
-              child: buildCarousel(snapshot.data?.result),
-            ),
-            buildDetails(snapshot?.data?.result)
+              child: buildCarousel(snapshot),
+            ), // the movie poster carousel
+            buildDetails(snapshot),
+            buildActionMenuBar(context),
           ],
         ));
 
     if (_isMenuOverlay) {
-      bodies.add(buildMenu());
+      bodies.add(buildMenuOverlay());
     }
     return bodies;
   }
 
-  Widget buildMenu(){
+  Widget buildActionMenuBar(BuildContext context){
+    return Container(
+      color: Colors.black,
+      child:  Flex(
+        direction: Axis.horizontal,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: DropdownButton<String>(
+              value: _dropdownValue,
+              underline: SizedBox(),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16
+              ),
+              onChanged: (String newValue) {
+                setState(() {
+
+                  if (_dropdownValue != newValue) {
+                    _dropdownValue = newValue;
+                    _reload(context);
+                  }
+                });
+              },
+              items: <String>['UPCOMING', 'POPULAR']
+                  .map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+            ),
+          ),
+          Spacer(
+            flex: 1,
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.menu,
+              size: 30,
+              color: Colors.white,
+            ),
+            onPressed: (){
+              setState(() {
+                _isMenuOverlay = true;
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildMenuOverlay(){
     if (_isMenuOverlay) {
       _startAnimate();
       return Container(
@@ -167,20 +176,21 @@ class _CarouselPageState extends State<CarouselPage>  with TickerProviderStateMi
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
-            IconButton(
-              icon: Icon(Icons.clear, size: 30, color: Colors.white,),
-              onPressed: (){
-                setState(() {
-                  _isMenuOverlay = false;
-                });
-              },
+            Spacer(
+              flex: 1,
             ),
             SlideTransition(
-              position: animation3,
+              position: _animation3,
               child:   FlatButton.icon(
                 padding: EdgeInsets.all(10),
                 onPressed: (){
-
+                  Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (BuildContext _) {
+                            return SearchPage();
+                          }
+                      )
+                  );
                 },
                 icon: Icon(Icons.search, size: 24, color: Colors.white),
                 label:  Text("Search",
@@ -189,7 +199,7 @@ class _CarouselPageState extends State<CarouselPage>  with TickerProviderStateMi
               ),
             ),
             SlideTransition(
-              position: animation2,
+              position: _animation2,
               child:  FlatButton.icon(
                 padding: EdgeInsets.all(10),
                 onPressed: (){
@@ -202,7 +212,7 @@ class _CarouselPageState extends State<CarouselPage>  with TickerProviderStateMi
               ),
             ),
             SlideTransition(
-              position: animation1,
+              position: _animation1,
               child:  FlatButton.icon(
                 padding: EdgeInsets.all(10),
                 onPressed: (){
@@ -214,6 +224,14 @@ class _CarouselPageState extends State<CarouselPage>  with TickerProviderStateMi
                 ),
               ),
             ),
+            IconButton(
+              icon: Icon(Icons.clear, size: 30, color: Colors.white,),
+              onPressed: (){
+                setState(() {
+                  _isMenuOverlay = false;
+                });
+              },
+            ),
           ],
         ),
       );
@@ -222,51 +240,45 @@ class _CarouselPageState extends State<CarouselPage>  with TickerProviderStateMi
 
   _startAnimate(){
     _stopAnimate();
-    if (animationController1.status == AnimationStatus.dismissed) {
-      animationController1.forward();
+    if (_animationController1.status == AnimationStatus.dismissed) {
+      _animationController1.forward();
     }
-    if (animationController2.status == AnimationStatus.dismissed) {
-      animationController2.forward();
+    if (_animationController2.status == AnimationStatus.dismissed) {
+      _animationController2.forward();
     }
-    if (animationController3.status == AnimationStatus.dismissed) {
-      animationController3.forward();
+    if (_animationController3.status == AnimationStatus.dismissed) {
+      _animationController3.forward();
     }
   }
 
   _stopAnimate(){
-    animationController1.reset();
-    animationController2.reset();
-    animationController3.reset();
+    _animationController1.reset();
+    _animationController2.reset();
+    _animationController3.reset();
   }
 
-  Widget buildDetails(List<Movie> data) {
-    var hasMovie =  data?.isNotEmpty == true && (data.length > _currentPage);
+  Widget buildDetails(AsyncSnapshot<MovieListResponse> snapshot){
+    var hasMovie = snapshot.connectionState == ConnectionState.done && snapshot?.data?.result?.isNotEmpty == true && (snapshot?.data?.result.length > _currentPage);
     if (hasMovie) {
-      var currentMovie = data[_currentPage];
+      var currentMovie = snapshot?.data?.result[_currentPage];
       return Expanded(
           child: ClipRect(
             child: Container(
               decoration: BoxDecoration(
+                color: Colors.black,
                 image: DecorationImage(
-                  image: NetworkImage(IMAGE_PREFIX + data[_currentPage].backdrop),
+                  image: CachedNetworkImageProvider(IMAGE_PREFIX + snapshot?.data?.result[_currentPage].backdrop),
                   fit: BoxFit.cover,
                 ),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
                 child: Container(
-                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.4)),
+                  decoration: BoxDecoration(color: Colors.black.withOpacity(0.5)),
                   child: ListView(
                     padding: EdgeInsets.all(12),
                     children: <Widget>[
-                      Text(
-                        currentMovie.title,
-                        style: TextStyle(
-                          fontSize: 24.0,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                      buildTitle(currentMovie),
                       Padding(
                         padding: EdgeInsets.only(top: 6),
                         child:  Text(
@@ -294,7 +306,7 @@ class _CarouselPageState extends State<CarouselPage>  with TickerProviderStateMi
                               SizedBox(
                                 height: 35,
                                 width: 35,
-                                child:  IconButton(icon: Image.asset("images/btn_youtube.png"),
+                                child:  IconButton(icon: Image.asset(BTN_YOUTUBE),
                                   padding: EdgeInsets.all(5),
                                   onPressed: (){
                                     searchInYoutube(currentMovie.title);
@@ -305,7 +317,7 @@ class _CarouselPageState extends State<CarouselPage>  with TickerProviderStateMi
                                 child:  SizedBox(
                                   height: 35,
                                   width: 35,
-                                  child:  IconButton(icon: Image.asset("images/btn_google.png"),
+                                  child:  IconButton(icon: Image.asset(BTN_GOOGLE),
                                     padding: EdgeInsets.all(5),
                                     onPressed: (){
                                       searchInGoogle(currentMovie.title);
@@ -323,29 +335,123 @@ class _CarouselPageState extends State<CarouselPage>  with TickerProviderStateMi
           )
       );
     } else {
-      return Container(
-        color: Colors.black,
+      return Expanded(
+        child: Container(
+          color: Colors.black,
+        ),
       );
     }
   }
 
-  Widget buildCarousel(List<Movie> data){
-    if (data?.isNotEmpty == true) {
-      return Swiper(
-        itemBuilder: (context, index){
-          return Image.network(IMAGE_PREFIX + data[index].poster, fit: BoxFit.scaleDown, height: 400, width: 267);
-        },
-        itemCount: data.length,
-        viewportFraction: 0.65,
-        scale: 0.7,
-        onIndexChanged: ((index) {
-          setState(() {
-            _currentPage = index;
-          });
-        }),
+  Widget buildTitle(Movie currentMovie){
+    var titleText = Text(
+      currentMovie.title,
+      style: TextStyle(
+        fontSize: 24.0,
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+
+    if ((currentMovie.voteCount ?? 0) > 0) {
+      MaterialColor color;
+      if (currentMovie.votePoint >= 6.5)
+        color = Colors.green;
+      else if (currentMovie.votePoint >= 4)
+        color = Colors.yellow;
+      else
+        color = Colors.red;
+
+      return Row(
+        children: <Widget>[
+          Flexible(
+            flex: 1,
+            fit: FlexFit.tight,
+            child: titleText,
+          ),
+          SizedBox(
+            width: 5,
+          ),
+          CircularPercentIndicator(
+            radius: 40.0,
+            lineWidth: 4.0,
+            percent: currentMovie.votePoint / 10,
+            center: new Text(
+              currentMovie.votePoint.toString(),
+              style: TextStyle(
+                fontSize: 12.0,
+                color: Colors.white,
+              ),
+            ),
+            backgroundColor: Colors.grey,
+            progressColor: color,
+          )
+        ],
       );
+    } else {
+      return titleText;
     }
-    return CircularProgressIndicator();
+  }
+
+  Widget buildCarousel(AsyncSnapshot<MovieListResponse> snapshot){
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return CircularProgressIndicator();
+    }
+
+    if (snapshot.connectionState == ConnectionState.done) {
+      if (snapshot.data?.result?.isNotEmpty == true) {
+        return Swiper(
+          itemBuilder: (context, index){
+            return CachedNetworkImage(
+                imageUrl: IMAGE_PREFIX + snapshot.data?.result[index].poster,
+                fit: BoxFit.scaleDown,
+                placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
+                height: 400, width: 267);
+          },
+          itemCount: snapshot.data?.result.length,
+          viewportFraction: 0.65,
+          scale: 0.7,
+          onIndexChanged: ((index) {
+            setState(() {
+              _currentPage = index;
+            });
+          }),
+        );
+      }
+    }
+  }
+
+  _showRetrySnackbar(BuildContext context){
+    final snackBar = SnackBar(content: Text('Fail to load :('),
+      action: SnackBarAction(
+        label: 'Retry',
+        onPressed: (){
+          setState(() {
+            _reload(context);
+          });
+        },
+      ),
+    );
+
+    Scaffold.of(context).showSnackBar(snackBar);
+  }
+
+  _reload(BuildContext context){
+    if (_dropdownValue == "UPCOMING") {
+      movies = getShows(GET_UPCOMING, null, 1).then((data) {
+        if (data == null) {
+          _showRetrySnackbar(context);
+        }
+        return data;
+      });
+    } else {
+      movies = getShows(GET_POPULAR, null, 1).then((data) {
+        if (data == null) {
+          _showRetrySnackbar(context);
+        }
+        return data;
+      });
+    }
   }
 
   searchInYoutube(String query) async {
