@@ -6,16 +6,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_swiper/flutter_swiper.dart';
 import 'package:my_show/asset_path.dart';
-import 'package:my_show/model/movie.dart';
+import 'package:my_show/model/show.dart';
 import 'package:my_show/network/api_constant.dart';
+import 'package:my_show/page/info_page.dart';
+import 'package:my_show/page/saved_page.dart';
 import 'package:my_show/page/search_page.dart';
+import 'package:my_show/show_storage_helper.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../network/network_call.dart';
 import '../network/response/movie_list_response.dart';
+import 'movie_details_page.dart';
 
 class CarouselPage extends StatefulWidget {
+
+  final ShowStorageHelper pref;
+
+  CarouselPage({@required this.pref, Key key}): super(key: key);
 
   @override
   _CarouselPageState createState() => _CarouselPageState();
@@ -187,7 +195,7 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
                   Navigator.of(context).push(
                       MaterialPageRoute(
                           builder: (BuildContext _) {
-                            return SearchPage();
+                            return SearchPage(pref: widget.pref,);
                           }
                       )
                   );
@@ -203,7 +211,13 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
               child:  FlatButton.icon(
                 padding: EdgeInsets.all(10),
                 onPressed: (){
-
+                  Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (BuildContext _) {
+                            return SavedPage(pref: widget.pref,);
+                          }
+                      )
+                  );
                 },
                 label:  Text("Saved",
                   style: TextStyle(color: Colors.white, fontSize: 20,),
@@ -216,7 +230,13 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
               child:  FlatButton.icon(
                 padding: EdgeInsets.all(10),
                 onPressed: (){
-
+                  Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (BuildContext _) {
+                            return InfoPage();
+                          }
+                      )
+                  );
                 },
                 icon: Icon(Icons.info_outline, size: 24, color: Colors.white),
                 label:  Text("About",
@@ -343,7 +363,7 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
     }
   }
 
-  Widget buildTitle(Movie currentMovie){
+  Widget buildTitle(Show currentMovie){
     var titleText = Text(
       currentMovie.title,
       style: TextStyle(
@@ -402,11 +422,22 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
       if (snapshot.data?.result?.isNotEmpty == true) {
         return Swiper(
           itemBuilder: (context, index){
-            return CachedNetworkImage(
-                imageUrl: IMAGE_PREFIX + snapshot.data?.result[index].poster,
-                fit: BoxFit.scaleDown,
-                placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
-                height: 400, width: 267);
+            return InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (BuildContext _) {
+                          return MovieDetailPage(id: snapshot.data?.result[index].id);
+                        }
+                    )
+                );
+              },
+              child: CachedNetworkImage(
+                  imageUrl: IMAGE_PREFIX + snapshot.data?.result[index].poster,
+                  fit: BoxFit.scaleDown,
+                  placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
+                  height: 400, width: 267),
+            );
           },
           itemCount: snapshot.data?.result.length,
           viewportFraction: 0.65,

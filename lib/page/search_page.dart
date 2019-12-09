@@ -1,13 +1,19 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:my_show/model/movie.dart';
+import 'package:my_show/model/show.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/movie_list_response.dart';
+import 'package:my_show/page/movie_details_page.dart';
 
 import '../asset_path.dart';
+import '../show_storage_helper.dart';
 
 class SearchPage extends StatefulWidget{
+
+  final ShowStorageHelper pref;
+
+  SearchPage({@required this.pref, Key key}): super(key: key);
 
   @override
   State createState() => _SearchPageState();
@@ -71,11 +77,12 @@ class _SearchPageState extends State<SearchPage>{
                         hintText: 'Search',
                         border: InputBorder.none,
                       ),
+                      textInputAction: TextInputAction.search,
                       onChanged: (query){
                         _query = query.trim();
                       },
                       onSubmitted: (query){
-                        if (query != null && query.trim() != _query) {
+                        if (query != null) {
                           setState(() {
                             _query = query.trim();
                             _movies = getShows(_searchMovie ? SEARCH_MOVIE : SEARCH_TV, _query, 1);
@@ -111,7 +118,7 @@ class _SearchPageState extends State<SearchPage>{
       return Padding(padding: EdgeInsets.only(top: 10), child: CircularProgressIndicator());
     }
 
-    var list = snapshot?.data?.result ?? List<Movie>();
+    var list = snapshot?.data?.result ?? List<Show>();
     if (list.isEmpty) {
       return Container();
     }
@@ -121,7 +128,7 @@ class _SearchPageState extends State<SearchPage>{
           children: ListTile.divideTiles(
               color: Colors.white30,
               context: context,
-              tiles: list.map((Movie currentMovie){
+              tiles: list.map((Show currentMovie){
                 return buildMovieEntry(currentMovie);
               }
               )
@@ -144,48 +151,66 @@ class _SearchPageState extends State<SearchPage>{
         height: 156, width: 104,);
     }
   }
-  
-  Widget buildMovieEntry(Movie movie){
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-      child: Row(
-        children: <Widget>[
-          SizedBox(
-            height: 156, width: 104,
-            child:  getPoster(movie.poster),
-          ),
-          SizedBox(width: 8,),
-          Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    (movie.title ?? movie.name),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16.0,
-                    ),
-                  ),
-                  SizedBox(height: 5,),
-                  Text(
-                    (movie.release ?? movie.firstAir),
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12.0,
-                    ),
-                  ),
-                ],
-              )
-          ),
-          SizedBox(width: 5,),
-          IconButton(
-            icon: Icon(Icons.favorite_border, color: Colors.white, size: 30,),
-            onPressed: (){
 
-            },
-          ),
-        ],
+  Widget buildMovieEntry(Show movie){
+    bool isFav = widget.pref.isShowSaved(movie);
+    return InkWell(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+        child: Row(
+          children: <Widget>[
+            SizedBox(
+              height: 156, width: 104,
+              child:  getPoster(movie.poster),
+            ),
+            SizedBox(width: 8,),
+            Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      (movie.title ?? movie.name),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16.0,
+                      ),
+                    ),
+                    SizedBox(height: 5,),
+                    Text(
+                      ((movie.release ?? movie.firstAir) ?? ''),
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12.0,
+                      ),
+                    ),
+                  ],
+                )
+            ),
+            SizedBox(width: 5,),
+            IconButton(
+              icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 30,),
+              onPressed: (){
+                setState(() {
+                  if (isFav) {
+                    widget.pref.removeShow(movie);
+                  } else {
+                    widget.pref.addShow(movie);
+                  }
+                });
+              },
+            ),
+          ],
+        ),
       ),
+      onTap: () {
+        Navigator.of(context).push(
+            MaterialPageRoute(
+                builder: (BuildContext _) {
+                  return MovieDetailPage(id: movie.id);
+                }
+            )
+        );
+      },
     );
   }
 }

@@ -1,11 +1,11 @@
+import 'package:my_show/model/show.dart';
 import 'package:my_show/network/response/base_response.dart';
-import 'package:my_show/model/movie.dart';
 
 class MovieListResponse extends BaseResponse{
   final int page;
   final int totalResult;
   final int totalPage;
-  final List<Movie> result;
+  final List<Show> result;
 
   MovieListResponse(this.page, this.totalResult, this.totalPage, this.result, String msg, int code): super(msg, code);
 
@@ -13,7 +13,7 @@ class MovieListResponse extends BaseResponse{
 
     Iterable iterable = json['results'];
     var posts = iterable.map((entry){
-      return Movie.fromMap(entry);
+      return Show.fromMap(entry);
     }).toList();
 
     return MovieListResponse(
