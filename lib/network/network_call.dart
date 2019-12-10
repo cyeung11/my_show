@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:my_show/model/movie_details.dart';
+import 'package:my_show/model/tv_details.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/api_key.dart';
 
@@ -87,6 +88,24 @@ Future<MovieDetails> getMovieDetail(int id) async {
     final response = await http.get(Uri.https(DOMAIN, GET_MOVIE_DETAIL + id.toString(), queryParameters));
     if (response.statusCode == 200) {
       return MovieDetails.fromMap(json.decode(response.body));
+    } else {
+      return null;
+    }
+  } catch (e) {
+    return null;
+  }
+}
+
+Future<TvDetails> getTVDetail(int id) async {
+
+  var queryParameters = {
+    'api_key': API_KEY_V3,
+  };
+
+  try {
+    final response = await http.get(Uri.https(DOMAIN, GET_TV_DETAIL + id.toString(), queryParameters));
+    if (response.statusCode == 200) {
+      return TvDetails.fromJson(json.decode(response.body));
     } else {
       return null;
     }

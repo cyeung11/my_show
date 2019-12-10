@@ -1,35 +1,35 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:my_show/model/movie_details.dart';
+import 'package:my_show/model/tv_details.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 
 import '../asset_path.dart';
 
-class MovieDetailPage extends StatefulWidget{
+class TvDetailPage extends StatefulWidget{
   final int id;
 
-  MovieDetailPage({@required this.id, Key key}): super(key: key);
+  TvDetailPage({@required this.id, Key key}): super(key: key);
 
   @override
-  State createState() => _MovieDetailPageState();
+  State createState() => _TvPageState();
 }
 
-class _MovieDetailPageState extends State<MovieDetailPage>{
+class _TvPageState extends State<TvDetailPage>{
 
-  Future<MovieDetails> _details;
+  Future<TvDetails> _details;
 
   @override
   Widget build(BuildContext context) {
     if (_details == null) {
-      _details = getMovieDetail(widget.id);
+      _details = getTVDetail(widget.id);
     }
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.black,
         body:  Stack(
           children: <Widget>[
-            FutureBuilder<MovieDetails>(
+            FutureBuilder<TvDetails>(
               future: _details,
               builder: (context, snapshot){
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -95,7 +95,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
     );
   }
 
-  Widget _buildDetails(MovieDetails detail){
+  Widget _buildDetails(TvDetails detail){
     var genreBuffer = StringBuffer();
     detail.genres.forEach((genre){
       if (genreBuffer.isNotEmpty) {
@@ -106,11 +106,11 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
 
     return ListView(
       children: <Widget>[
-        _headerImage(detail.poster, detail.backdrop),
+        _headerImage(detail.posterPath, detail.backdropPath),
         Padding(
           padding: EdgeInsets.only(left: 16, right: 16, top: 10),
           child: Text(
-            detail.title,
+            detail.name,
             style: TextStyle(
               fontSize: 24.0,
               color: Colors.white,
@@ -123,7 +123,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
           child: Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: <Widget>[
-              Text(detail.getReleaseDate().year.toString(),
+              Text(detail.getFirstAirDate().year.toString(),
                   style: TextStyle(
                     fontSize: 16.0,
                     color: Colors.grey,
@@ -170,7 +170,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
   }
 
   _loadData(){
-    _details = getMovieDetail(widget.id).then((data) {
+    _details = getTVDetail(widget.id).then((data) {
       if (data == null) {
         _showRetrySnackbar(context);
       }

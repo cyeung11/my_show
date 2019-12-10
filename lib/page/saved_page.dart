@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:my_show/model/show.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/page/movie_details_page.dart';
+import 'package:my_show/page/tv_details_page.dart';
 
 import '../asset_path.dart';
 import '../show_storage_helper.dart';
@@ -111,7 +112,7 @@ class _SavedPageState extends State<SavedPage>{
         Navigator.of(context).push(
             MaterialPageRoute(
                 builder: (BuildContext _) {
-                  return MovieDetailPage(id: movie.id);
+                  return movie.isMovie() ? MovieDetailPage(id: movie.id) : TvDetailPage(id: movie.id,);
                 }
             )
         );

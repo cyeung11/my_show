@@ -5,6 +5,7 @@ import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/movie_list_response.dart';
 import 'package:my_show/page/movie_details_page.dart';
+import 'package:my_show/page/tv_details_page.dart';
 
 import '../asset_path.dart';
 import '../show_storage_helper.dart';
@@ -206,7 +207,7 @@ class _SearchPageState extends State<SearchPage>{
         Navigator.of(context).push(
             MaterialPageRoute(
                 builder: (BuildContext _) {
-                  return MovieDetailPage(id: movie.id);
+                  return _searchMovie ? MovieDetailPage(id: movie.id) : TvDetailPage(id: movie.id,);
                 }
             )
         );
