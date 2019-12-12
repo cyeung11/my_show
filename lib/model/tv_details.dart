@@ -1,10 +1,11 @@
 import 'package:intl/intl.dart';
 import 'package:my_show/model/episode.dart';
 import 'package:my_show/model/role.dart';
+import 'package:my_show/model/watch_progress.dart';
 
-import 'Season.dart';
 import 'genre.dart';
 import 'person.dart';
+import 'season.dart';
 
 class TvDetails {
     String backdropPath;
@@ -22,7 +23,7 @@ class TvDetails {
     List<Role> networks;
     Episode nextEpisodeAir;
     int noEpisodes;
-    int noSseasons;
+    int noSeasons;
     List<String> originCountry;
     String originalLanguage;
     String originalName;
@@ -36,7 +37,12 @@ class TvDetails {
     double voteAverage;
     int voteCount;
 
-    TvDetails({this.backdropPath, this.createdBy, this.episodeRunTime, this.firstAirDate, this.genres, this.homepage, this.id, this.inProduction, this.languages, this.lastAirDate, this.lastEpisodeAir, this.name, this.networks, this.nextEpisodeAir, this.noEpisodes, this.noSseasons, this.originCountry, this.originalLanguage, this.originalName, this.overview, this.popularity, this.posterPath, this.productionCompanies, this.seasons, this.status, this.type, this.voteAverage, this.voteCount});
+    WatchProgress progress;
+
+    TvDetails({this.backdropPath, this.createdBy, this.episodeRunTime, this.firstAirDate, this.genres, this.homepage, this.id, this.inProduction,
+        this.languages, this.lastAirDate, this.lastEpisodeAir, this.name, this.networks, this.nextEpisodeAir, this.noEpisodes, this.noSeasons,
+        this.originCountry, this.originalLanguage, this.originalName, this.overview, this.popularity, this.posterPath, this.productionCompanies,
+        this.seasons, this.status, this.type, this.voteAverage, this.voteCount, this.progress});
 
     factory TvDetails.fromJson(Map<String, dynamic> json) {
         return TvDetails(
@@ -55,7 +61,7 @@ class TvDetails {
             networks: json['networks'] != null ? (json['networks'] as List).map((i) => Role.fromJson(i)).toList() : null,
             nextEpisodeAir: json['next_episode_to_air'] != null ? Episode.fromJson(json['next_episode_to_air']) : null,
             noEpisodes: json['number_of_episodes'],
-            noSseasons: json['number_of_seasons'],
+            noSeasons: json['number_of_seasons'],
             originCountry: json['origin_country'] != null ? new List<String>.from(json['origin_country']) : null,
             originalLanguage: json['original_language'],
             originalName: json['original_name'],
@@ -68,6 +74,7 @@ class TvDetails {
             type: json['type'], 
             voteAverage: json['vote_average'],
             voteCount: json['vote_count'],
+            progress: json['progress'] != null ? WatchProgress.fromMap(json['progress']) : null,
         );
     }
 
@@ -81,7 +88,7 @@ class TvDetails {
         data['last_air_date'] = this.lastAirDate;
         data['name'] = this.name;
         data['number_of_episodes'] = this.noEpisodes;
-        data['number_of_seasons'] = this.noSseasons;
+        data['number_of_seasons'] = this.noSeasons;
         data['original_language'] = this.originalLanguage;
         data['original_name'] = this.originalName;
         data['overview'] = this.overview;
@@ -120,6 +127,9 @@ class TvDetails {
         }
         if (this.seasons != null) {
             data['seasons'] = this.seasons.map((v) => v.toJson()).toList();
+        }
+        if (this.progress != null) {
+            data['progress'] = this.progress.toJson();
         }
         return data;
     }

@@ -11,6 +11,7 @@ import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/page/info_page.dart';
 import 'package:my_show/page/saved_page.dart';
 import 'package:my_show/page/search_page.dart';
+import 'package:my_show/page/watching_page.dart';
 import 'package:my_show/show_storage_helper.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -39,27 +40,29 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
 
   String _dropdownValue = 'UPCOMING';
 
-  Animation<Offset> _animation1, _animation2, _animation3;
-  AnimationController _animationController1, _animationController2, _animationController3;
+  Animation<Offset> _animation1, _animation2, _animation3, _animation4;
+  AnimationController _animationController1, _animationController2, _animationController3, _animationController4;
 
   @override
   void initState() {
     super.initState();
+    _animationController1 = AnimationController(vsync: this, duration: Duration(milliseconds: 350));
+    _animationController2 = AnimationController(vsync: this, duration: Duration(milliseconds: 250));
+    _animationController3 = AnimationController(vsync: this, duration: Duration(milliseconds: 200));
+    _animationController4 = AnimationController(vsync: this, duration: Duration(milliseconds: 150));
+    _animation1 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(_animationController1);
+    _animation2 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(_animationController2);
+    _animation3 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(_animationController3);
+    _animation4 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(_animationController4);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark.copyWith(
       statusBarColor: Colors.black54, //or set color with: Color(0xFF0000FF)
       statusBarIconBrightness: Brightness.light,
     ));
 
-    _animationController1 = AnimationController(vsync: this, duration: Duration(milliseconds: 350));
-    _animationController2 = AnimationController(vsync: this, duration: Duration(milliseconds: 250));
-    _animationController3 = AnimationController(vsync: this, duration: Duration(milliseconds: 200));
-    _animation1 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(_animationController1);
-    _animation2 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(_animationController2);
-    _animation3 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(_animationController3);
-  }
-
-  @override
-  Widget build(BuildContext context) {
     if (movies == null) {
       _reload(context);
     }
@@ -188,7 +191,7 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
               flex: 1,
             ),
             SlideTransition(
-              position: _animation3,
+              position: _animation4,
               child:   FlatButton.icon(
                 padding: EdgeInsets.all(10),
                 onPressed: (){
@@ -207,7 +210,7 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
               ),
             ),
             SlideTransition(
-              position: _animation2,
+              position: _animation3,
               child:  FlatButton.icon(
                 padding: EdgeInsets.all(10),
                 onPressed: (){
@@ -223,6 +226,25 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
                   style: TextStyle(color: Colors.white, fontSize: 20,),
                 ),
                 icon: Icon(Icons.favorite_border, size: 24, color: Colors.white),
+              ),
+            ),
+            SlideTransition(
+              position: _animation2,
+              child:  FlatButton.icon(
+                padding: EdgeInsets.all(10),
+                onPressed: (){
+                  Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (BuildContext _) {
+                            return WatchingPage(pref: widget.pref,);
+                          }
+                      )
+                  );
+                },
+                label:  Text("Watching",
+                  style: TextStyle(color: Colors.white, fontSize: 20,),
+                ),
+                icon: Icon(Icons.desktop_mac, size: 24, color: Colors.white),
               ),
             ),
             SlideTransition(
@@ -269,12 +291,16 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
     if (_animationController3.status == AnimationStatus.dismissed) {
       _animationController3.forward();
     }
+    if (_animationController4.status == AnimationStatus.dismissed) {
+      _animationController4.forward();
+    }
   }
 
   _stopAnimate(){
     _animationController1.reset();
     _animationController2.reset();
     _animationController3.reset();
+    _animationController4.reset();
   }
 
   Widget buildDetails(AsyncSnapshot<MovieListResponse> snapshot){

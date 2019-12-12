@@ -31,6 +31,9 @@ class Show {
   final double votePoint;
   final bool video;
 
+  int watchedSeason;
+  int watchedEpisode;
+
   bool isMovie() => (title != null);
 
   factory Show.fromMap(Map<String, dynamic> json) => _$ShowFromJson(json);
@@ -39,6 +42,6 @@ class Show {
 
   Show(this.id, this.title, this.name, this.originalTitle, this.overview, this.language,
       this.release, this.firstAir, this.genres, this.adult, this.backdrop, this.poster,
-      this.popularity, this.voteCount, this.votePoint, this.video);
+      this.popularity, this.voteCount, this.votePoint, this.video, this.watchedSeason, this.watchedEpisode);
 
 }

@@ -24,6 +24,8 @@ Show _$ShowFromJson(Map<String, dynamic> json) {
     json['vote_count'] as int,
     (json['vote_average'] as num)?.toDouble(),
     json['video'] as bool,
+    json['watchedSeason'] as int,
+    json['watchedEpisode'] as int,
   );
 }
 
@@ -44,4 +46,6 @@ Map<String, dynamic> _$ShowToJson(Show instance) => <String, dynamic>{
       'vote_count': instance.voteCount,
       'vote_average': instance.votePoint,
       'video': instance.video,
+      'watchedSeason': instance.watchedSeason,
+      'watchedEpisode': instance.watchedEpisode,
     };

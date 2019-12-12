@@ -1,49 +1,83 @@
 import 'dart:convert';
 
 import 'package:my_show/model/show.dart';
+import 'package:my_show/model/tv_details.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String PREF_SAVED_SHOW = "saved_show";
+const String PREF_WATCH_TV = "watched_tv";
 
 class ShowStorageHelper {
   SharedPreferences pref;
 
-  Set<Show> _savedShow;
-  List<Show> getSaved() => _savedShow.toList();
+  List<TvDetails> watchTv;
+  List<Show> savedShow;
 
   ShowStorageHelper(this.pref) {
-    _savedShow = _getShows(PREF_SAVED_SHOW) ?? Set<Show>();
+    savedShow = _getShows(PREF_SAVED_SHOW) ?? List<Show>();
+    watchTv = _getTv(PREF_WATCH_TV) ?? List<TvDetails>();
   }
 
   addShow(Show newShow){
-    _savedShow.add(newShow);
+    if (!isShowSaved(newShow.id)) {
+      savedShow.add(newShow);
+      _saveShows();
+    }
+  }
+
+  removeShow(int showId){
+    savedShow.removeWhere((saved){
+      return saved.id == showId;
+    });
     _saveShows();
   }
 
-  bool removeShow(Show show){
-    if (isShowSaved(show)) {
-      _savedShow.remove(show);
-      _saveShows();
-      return true;
-    } else {
-      return false;
+  addTv(TvDetails newTv){
+    if (!isTvSaved(newTv.id)) {
+      watchTv.add(newTv);
+      saveTv();
     }
   }
-  
-  bool isShowSaved(Show show) {
-    return _savedShow.firstWhere((saved) => saved.id == show.id, orElse: () => null) != null;
+
+  removeTv(int tvId){
+    watchTv.removeWhere((saved){
+      return saved.id == tvId;
+    });
+    saveTv();
+  }
+
+  bool isShowSaved(int showId) {
+    return savedShow.firstWhere((saved) => saved.id == showId, orElse: () => null) != null;
+  }
+  bool isTvSaved(int tvId) {
+    return watchTv.firstWhere((saved) => saved.id == tvId, orElse: () => null) != null;
+  }
+
+  saveTv() {
+    List<String> toSave = watchTv.map((tv) => jsonEncode(tv)).toList();
+    pref.setStringList(PREF_WATCH_TV, toSave);
   }
 
   _saveShows() {
-    List<String> toSave = _savedShow.map((show) => jsonEncode(show)).toList();
+    List<String> toSave = savedShow.map((show) => jsonEncode(show)).toList();
     pref.setStringList(PREF_SAVED_SHOW, toSave);
   }
 
-  Set<Show> _getShows(String key){
+  List<Show> _getShows(String key){
     if (pref.containsKey(key)) {
       List<String> savedList = pref.getStringList(key);
       List<Show> shows = savedList.map((string) => Show.fromMap(jsonDecode(string))).toList();
-      return shows.toSet();
+      return shows;
+    } else {
+      return null;
+    }
+  }
+
+  List<TvDetails> _getTv(String key){
+    if (pref.containsKey(key)) {
+      List<String> savedList = pref.getStringList(key);
+      List<TvDetails> tv = savedList.map((string) => TvDetails.fromJson(jsonDecode(string))).toList();
+      return tv;
     } else {
       return null;
     }

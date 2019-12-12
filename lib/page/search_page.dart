@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:my_show/model/show.dart';
+import 'package:my_show/model/watch_progress.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/movie_list_response.dart';
@@ -154,7 +155,7 @@ class _SearchPageState extends State<SearchPage>{
   }
 
   Widget buildMovieEntry(Show movie){
-    bool isFav = widget.pref.isShowSaved(movie);
+    bool isFav = widget.pref.isShowSaved(movie.id);
     return InkWell(
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 5),
@@ -193,9 +194,16 @@ class _SearchPageState extends State<SearchPage>{
               onPressed: (){
                 setState(() {
                   if (isFav) {
-                    widget.pref.removeShow(movie);
+                    widget.pref.removeShow(movie.id);
                   } else {
                     widget.pref.addShow(movie);
+
+                    if (!movie.isMovie()) {
+                      getTVDetail(movie.id).then((tv){
+                        tv.progress = WatchProgress(1, 1, 1);
+                        widget.pref.addTv(tv);
+                      });
+                    }
                   }
                 });
               },
