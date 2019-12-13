@@ -160,7 +160,7 @@ class _TvPageState extends State<TvDetailPage>{
         label: 'Retry',
         onPressed: (){
           setState(() {
-            _loadData();
+            _loadData(context);
           });
         },
       ),
@@ -169,7 +169,7 @@ class _TvPageState extends State<TvDetailPage>{
     Scaffold.of(context).showSnackBar(snackBar);
   }
 
-  _loadData(){
+  _loadData(BuildContext context){
     _details = getTVDetail(widget.id).then((data) {
       if (data == null) {
         _showRetrySnackbar(context);

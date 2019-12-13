@@ -1,37 +1,37 @@
 import 'package:my_show/model/season.dart';
 
 class WatchProgress {
-  int episodeNo;
   int seasonNo;
+  int episodeNo;
   int totalEpisode;
 
-  WatchProgress(this.episodeNo, this.seasonNo, this.totalEpisode);
+  WatchProgress(this.seasonNo, this.episodeNo, this.totalEpisode);
 
   factory WatchProgress.fromMap(Map<String, dynamic> json) {
     return WatchProgress(
-      json['episodeNo'],
       json['seasonNo'],
+      json['episodeNo'],
       json['totalEpisode'],
     );
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
-    data['episodeNo'] = this.episodeNo;
     data['seasonNo'] = this.seasonNo;
+    data['episodeNo'] = this.episodeNo;
     data['totalEpisode'] = this.totalEpisode;
     return data;
   }
 
-  String userReadable() => "   S$seasonNo E$episodeNo ($totalEpisode)";
+  String userReadable() => "S$seasonNo E$episodeNo ($totalEpisode)";
 
   WatchProgress next(List<Season> seasonsInfo) {
-    var currentSeason = seasonsInfo.firstWhere((season) => season.seasonNo == seasonNo, orElse: ()=> null);
-    if (currentSeason != null) {
-      var isLastEpisodeInTheSeason = currentSeason.episodeCount == episodeNo;
+    var currentSeasonIndex = seasonsInfo.indexWhere((season) => season.seasonNo == seasonNo);
+    if (currentSeasonIndex != -1) {
+      var isLastEpisodeInTheSeason = seasonsInfo[currentSeasonIndex].episodeCount == episodeNo;
       if (isLastEpisodeInTheSeason) {
-        var nextSeason = seasonsInfo.firstWhere((season) => season.seasonNo == seasonNo + 1, orElse: ()=> null);
-        if (nextSeason != null) {
+        if (currentSeasonIndex < seasonsInfo.length - 1 ) {
+          var nextSeason = seasonsInfo[currentSeasonIndex + 1];
           return WatchProgress(nextSeason.seasonNo, 1, totalEpisode + 1);
         }
       } else {
@@ -42,13 +42,14 @@ class WatchProgress {
   }
 
   WatchProgress previous(List<Season> seasonsInfo) {
-    if (episodeNo != 1 || seasonNo != 1) {
+    if (episodeNo != 1 || seasonNo != seasonsInfo.first?.seasonNo) {
       if (episodeNo != 1) {
         return WatchProgress(seasonNo, episodeNo - 1, totalEpisode -1);
       } else {
-        var lastSeason = seasonsInfo.firstWhere((season) => season.seasonNo == seasonNo - 1, orElse: ()=> null);
+        var currentSeasonIndex = seasonsInfo.indexWhere((season) => season.seasonNo == seasonNo);
+        var lastSeason = seasonsInfo[currentSeasonIndex - 1];
         if (lastSeason != null) {
-          return WatchProgress(seasonNo - 1, lastSeason.episodeCount, totalEpisode - 1);
+          return WatchProgress(lastSeason.seasonNo, lastSeason.episodeCount, totalEpisode - 1);
         }
       }
     }

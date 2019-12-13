@@ -57,36 +57,12 @@ class _WatchingPageState extends State<WatchingPage> with WidgetsBindingObserver
         }
       },
       child: Scaffold(
-        appBar: AppBar(
-          brightness: Brightness.dark,
-          backgroundColor: Colors.black,
-          title: Text(
-            'Watching',
-            style: TextStyle(
-                color: Colors.white,
-                fontSize: 20
-            ),
-          ),
-          leading: BackButton(
-            color: Colors.white,
-          ),
-          actions: <Widget>[
-            IconButton(
-              icon: Icon(_deleteMode ? Icons.done : Icons.edit),
-              color: Colors.white,
-              onPressed: (){
-                setState(() {
-                  _deleteMode = !_deleteMode;
-                });
-              },
-            )
-          ],
-        ),
+        appBar: buildAppBar(),
         backgroundColor: Colors.black,
         body: Column(
           children: <Widget>[
             Expanded(
-              child: buildSaveList(),
+              child: buildSaveList(context),
             )
           ],
         ),
@@ -94,41 +70,62 @@ class _WatchingPageState extends State<WatchingPage> with WidgetsBindingObserver
     );
   }
 
-  Widget buildSaveList(){
-    var list = widget.pref.watchTv;
+  Widget buildAppBar(){
+    return AppBar(
+      brightness: Brightness.dark,
+      backgroundColor: Colors.black,
+      title: Text(
+        'Watching',
+        style: TextStyle(
+            color: Colors.white,
+            fontSize: 20
+        ),
+      ),
+      leading: BackButton(
+        color: Colors.white,
+      ),
+      actions: <Widget>[
+        IconButton(
+          icon: Icon(_deleteMode ? Icons.done : Icons.edit),
+          color: Colors.white,
+          onPressed: (){
+            setState(() {
+              _deleteMode = !_deleteMode;
+            });
+          },
+        )
+      ],
+    );
+  }
+
+  Widget buildSaveList(BuildContext context){
+    var watching = widget.pref.watchTv.asMap();
+
     return ListView(
         children: ListTile.divideTiles(
-            color: Colors.white30,
+            color: Colors.white54,
             context: context,
-            tiles: list.map((TvDetails currentTv){
-              return buildMovieEntry(currentTv);
-            }
-            )
+            tiles: watching.keys.map((int index) {
+              return buildMovieEntry(context, watching[index], index);
+            })
         ).toList()
     );
   }
 
-  Widget getPoster(String path){
-    if (path?.isNotEmpty == true) {
-      return CachedNetworkImage(
-          imageUrl: (SMALL_IMAGE_PREFIX + path),
-          fit: BoxFit.contain,
-          height: 156, width: 104,
-          placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER)
-      );
-    } else {
-      return Image(image: AssetImage(POSTER_PLACEHOLDER),
-        fit: BoxFit.contain,
-        height: 156, width: 104,);
-    }
-  }
-
-  Widget buildMovieEntry(TvDetails tv){
-    List<Widget> widgetList = List<Widget>();
-    widgetList.add(SizedBox(
-      height: 156, width: 104,
+  Widget getPoster(TvDetails tv){
+    return SizedBox(
+      height: 162, width: 104,
       child: InkWell(
-        child: getPoster(tv.posterPath),
+        child: tv.posterPath?.isNotEmpty == true
+            ? CachedNetworkImage(
+            imageUrl: (SMALL_IMAGE_PREFIX + tv.posterPath),
+            fit: BoxFit.contain,
+            height: 156, width: 104,
+            placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER)
+        )
+            : Image(image: AssetImage(POSTER_PLACEHOLDER),
+          fit: BoxFit.contain,
+          height: 156, width: 104,),
         onTap: () {
           if (!_deleteMode) {
             Navigator.of(context).push(
@@ -141,12 +138,10 @@ class _WatchingPageState extends State<WatchingPage> with WidgetsBindingObserver
           }
         },
       ),
-    ));
-
-    widgetList.add(
-        SizedBox(width: 8,)
     );
+  }
 
+  Widget nextEpisodeText(TvDetails tv){
     var nextEpisode = StringBuffer(tv?.inProduction == true ? 'Latest: ' : 'Ended');
     if (tv?.inProduction == true) {
       if (tv.lastEpisodeAir?.seasonNo != null) {
@@ -159,27 +154,35 @@ class _WatchingPageState extends State<WatchingPage> with WidgetsBindingObserver
         nextEpisode.write(tv.lastEpisodeAir?.episodeNo);
       }
     }
+    return Text(
+        nextEpisode.toString(),
+        style: TextStyle(
+        color: Colors.grey,
+        fontSize: 12.0,
+    ));
+  }
+
+  Widget buildMovieEntry(BuildContext buildContext, TvDetails tv, int indexInList){
+    List<Widget> widgetList = List<Widget>();
+    widgetList.add(
+        SizedBox(width: 12,)
+    );
+    widgetList.add(getPoster(tv));
+    widgetList.add(
+        SizedBox(width: 8,)
+    );
+
 
     widgetList.add(
         Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  (tv.name ?? tv.name),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16.0,
-                  ),
+                Text(tv.name,
+                  style: TextStyle(color: Colors.white, fontSize: 16.0,),
                 ),
                 SizedBox(height: 5,),
-                Text(
-                  nextEpisode.toString(),
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12.0,
-                  ),
-                ),
+                nextEpisodeText(tv),
                 buildWatched(tv)
               ],
             )
@@ -190,21 +193,70 @@ class _WatchingPageState extends State<WatchingPage> with WidgetsBindingObserver
     );
     if (_deleteMode) {
       widgetList.add(
-          IconButton(
-            icon: Icon(Icons.delete, size: 20),
-            color: Colors.white,
-            onPressed: (){
-              _showRemoveDialog(tv);
-            },
-          )
+        Container(
+          height: 162,
+          color: Colors.red,
+          child: Center(
+            child: IconButton(
+              icon: Icon(Icons.delete, size: 20),
+              color: Colors.white,
+              onPressed: (){
+                _showRemoveDialog(tv);
+              },
+            ),
+          ),
+        )
       );
     }
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      child: Row(
+    if (_deleteMode) {
+      return Row(
         children: widgetList,
-      ),
+      );
+    }
+
+    return Builder(
+      builder: (BuildContext context){
+        return Dismissible(
+          // Show a red background as the item is swiped away.
+          background: Container(
+            color: Colors.red,
+            child: Stack(
+              fit: StackFit.expand, alignment: AlignmentDirectional.centerEnd,
+              children: <Widget>[
+                Positioned(
+                  right: 10,
+                  child: Icon(Icons.delete, size: 20, color: Colors.white,),
+                )
+              ],
+            ),
+          ),
+          key: Key(tv.id.toString()), direction: DismissDirection.endToStart,
+          onDismissed: (direction) {
+
+            setState(() {
+              widget.pref.removeTv(tv.id);
+            });
+
+            Scaffold.of(context).showSnackBar(
+                SnackBar(content: Text('Item removed'),
+                  action: SnackBarAction(
+                    label: 'Undo',
+                    onPressed: (){
+                      setState(() {
+                        widget.pref.addTv(tv, index: indexInList);
+                      });
+                    },
+                  ),
+                )
+            );
+          },
+
+          child:Row(
+              children: widgetList,
+          ),
+        );
+      },
     );
   }
 
@@ -238,8 +290,8 @@ class _WatchingPageState extends State<WatchingPage> with WidgetsBindingObserver
   }
 
   Widget buildWatched(TvDetails tv){
-    var isLast = tv.lastEpisodeAir?.seasonNo == tv.progress.seasonNo && tv.lastEpisodeAir?.episodeNo == tv.progress.episodeNo;
-    var isFirst = tv.progress.seasonNo == 1 && tv.progress.episodeNo == 1;
+    var isLast = tv.lastEpisodeAir?.seasonNo == tv.progress?.seasonNo && tv.lastEpisodeAir?.episodeNo == tv.progress?.episodeNo;
+    var isFirst = tv.progress?.seasonNo == 1 && tv.progress?.episodeNo == 1;
     List<Widget> widgetList = List<Widget>();
     if (!_deleteMode) {
       widgetList.add(IconButton(
@@ -295,8 +347,9 @@ class _WatchingPageState extends State<WatchingPage> with WidgetsBindingObserver
     showDialog(context: context,
         barrierDismissible: true,
         builder: (context){
-          return EpisodeSelectDialog(
+          return EpisodeSelectDialog.show(
             seasons: tv.seasons,
+            currentProgress: tv.progress,
             onEpisodeSelected: (episode){
               setState(() {
                 tv.progress = episode;

@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:my_show/model/show.dart';
-import 'package:my_show/model/watch_progress.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/movie_list_response.dart';
@@ -200,7 +199,6 @@ class _SearchPageState extends State<SearchPage>{
 
                     if (!movie.isMovie()) {
                       getTVDetail(movie.id).then((tv){
-                        tv.progress = WatchProgress(1, 1, 1);
                         widget.pref.addTv(tv);
                       });
                     }

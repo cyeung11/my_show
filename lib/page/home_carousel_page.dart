@@ -328,7 +328,7 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
                       Padding(
                         padding: EdgeInsets.only(top: 6),
                         child:  Text(
-                          currentMovie.release,
+                          currentMovie.release ?? currentMovie.firstAir,
                           style: TextStyle(
                             fontSize: 14.0,
                             color: Colors.grey,
@@ -355,7 +355,7 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
                                 child:  IconButton(icon: Image.asset(BTN_YOUTUBE),
                                   padding: EdgeInsets.all(5),
                                   onPressed: (){
-                                    searchInYoutube(currentMovie.title);
+                                    searchInYoutube(currentMovie.title ?? currentMovie.name);
                                   },),
                               ),
                               Padding(
@@ -366,7 +366,7 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
                                   child:  IconButton(icon: Image.asset(BTN_GOOGLE),
                                     padding: EdgeInsets.all(5),
                                     onPressed: (){
-                                      searchInGoogle(currentMovie.title);
+                                      searchInGoogle(currentMovie.title ?? currentMovie.name);
                                     },),
                                 ),
                               ),
@@ -391,7 +391,7 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
 
   Widget buildTitle(Show currentMovie){
     var titleText = Text(
-      currentMovie.title,
+      currentMovie.title ?? currentMovie.name,
       style: TextStyle(
         fontSize: 24.0,
         color: Colors.white,
@@ -465,7 +465,7 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
                   height: 400, width: 267),
             );
           },
-          itemCount: snapshot.data?.result.length,
+          itemCount: snapshot.data?.result?.length ?? 0,
           viewportFraction: 0.65,
           scale: 0.7,
           onIndexChanged: ((index) {
@@ -502,7 +502,7 @@ class _CarouselPageState extends State<CarouselPage> with TickerProviderStateMix
         return data;
       });
     } else {
-      movies = getShows(GET_POPULAR, null, 1).then((data) {
+      movies = getShows(GET_TV_POPULAR, null, 1).then((data) {
         if (data == null) {
           _showRetrySnackbar(context);
         }

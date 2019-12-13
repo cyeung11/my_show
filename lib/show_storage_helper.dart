@@ -32,9 +32,13 @@ class ShowStorageHelper {
     _saveShows();
   }
 
-  addTv(TvDetails newTv){
+  addTv(TvDetails newTv, {int index = -1}){
     if (!isTvSaved(newTv.id)) {
-      watchTv.add(newTv);
+      if (index != -1 && index < watchTv.length) {
+        watchTv.insert(index, newTv);
+      } else {
+        watchTv.add(newTv);
+      }
       saveTv();
     }
   }

@@ -37,12 +37,14 @@ class TvDetails {
     double voteAverage;
     int voteCount;
 
-    WatchProgress progress;
+    WatchProgress progress = WatchProgress(1, 1, 1);
 
     TvDetails({this.backdropPath, this.createdBy, this.episodeRunTime, this.firstAirDate, this.genres, this.homepage, this.id, this.inProduction,
         this.languages, this.lastAirDate, this.lastEpisodeAir, this.name, this.networks, this.nextEpisodeAir, this.noEpisodes, this.noSeasons,
         this.originCountry, this.originalLanguage, this.originalName, this.overview, this.popularity, this.posterPath, this.productionCompanies,
-        this.seasons, this.status, this.type, this.voteAverage, this.voteCount, this.progress});
+        this.seasons, this.status, this.type, this.voteAverage, this.voteCount, this.progress}){
+        seasons.sort((s1, s2) => s1.seasonNo.compareTo(s2.seasonNo));
+    }
 
     factory TvDetails.fromJson(Map<String, dynamic> json) {
         return TvDetails(
@@ -69,12 +71,12 @@ class TvDetails {
             popularity: json['popularity'], 
             posterPath: json['poster_path'],
             productionCompanies: json['production_companies'] != null ? (json['production_companies'] as List).map((i) => Role.fromJson(i)).toList() : null,
-            seasons: json['seasons'] != null ? (json['seasons'] as List).map((i) => Season.fromJson(i)).toList() : null, 
+            seasons: json['seasons'] != null ? (json['seasons'] as List).map((i) => Season.fromJson(i)).toList() : null,
             status: json['status'], 
             type: json['type'], 
             voteAverage: json['vote_average'],
             voteCount: json['vote_count'],
-            progress: json['progress'] != null ? WatchProgress.fromMap(json['progress']) : null,
+            progress: json['progress'] != null ? WatchProgress.fromMap(json['progress']) : WatchProgress(1, 1, 1),
         );
     }
 
