@@ -1,35 +1,39 @@
 import 'dart:convert';
 
-import 'package:my_show/model/show.dart';
+import 'package:my_show/model/movie_details.dart';
 import 'package:my_show/model/tv_details.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String PREF_SAVED_SHOW = "saved_show";
+const String PREF_SAVED_MOVIE = "saved_movie";
 const String PREF_WATCH_TV = "watched_tv";
 
 class ShowStorageHelper {
   SharedPreferences pref;
 
   List<TvDetails> watchTv;
-  List<Show> savedShow;
+  List<MovieDetails> savedMovie;
 
   ShowStorageHelper(this.pref) {
-    savedShow = _getShows(PREF_SAVED_SHOW) ?? List<Show>();
+    savedMovie = _getMovie(PREF_SAVED_MOVIE) ?? List<MovieDetails>();
     watchTv = _getTv(PREF_WATCH_TV) ?? List<TvDetails>();
   }
 
-  addShow(Show newShow){
-    if (!isShowSaved(newShow.id)) {
-      savedShow.add(newShow);
-      _saveShows();
+  addShow(MovieDetails newMovie, {int index = -1}){
+    if (!isMovieSaved(newMovie.id)) {
+      if (index != -1 && index < watchTv.length) {
+        savedMovie.insert(index, newMovie);
+      } else {
+        savedMovie.add(newMovie);
+      }
+      _saveMovies();
     }
   }
 
-  removeShow(int showId){
-    savedShow.removeWhere((saved){
-      return saved.id == showId;
+  removeShow(int movieId){
+    savedMovie.removeWhere((saved){
+      return saved.id == movieId;
     });
-    _saveShows();
+    _saveMovies();
   }
 
   addTv(TvDetails newTv, {int index = -1}){
@@ -50,8 +54,8 @@ class ShowStorageHelper {
     saveTv();
   }
 
-  bool isShowSaved(int showId) {
-    return savedShow.firstWhere((saved) => saved.id == showId, orElse: () => null) != null;
+  bool isMovieSaved(int movieId) {
+    return savedMovie.firstWhere((saved) => saved.id == movieId, orElse: () => null) != null;
   }
   bool isTvSaved(int tvId) {
     return watchTv.firstWhere((saved) => saved.id == tvId, orElse: () => null) != null;
@@ -62,19 +66,9 @@ class ShowStorageHelper {
     pref.setStringList(PREF_WATCH_TV, toSave);
   }
 
-  _saveShows() {
-    List<String> toSave = savedShow.map((show) => jsonEncode(show)).toList();
-    pref.setStringList(PREF_SAVED_SHOW, toSave);
-  }
-
-  List<Show> _getShows(String key){
-    if (pref.containsKey(key)) {
-      List<String> savedList = pref.getStringList(key);
-      List<Show> shows = savedList.map((string) => Show.fromMap(jsonDecode(string))).toList();
-      return shows;
-    } else {
-      return null;
-    }
+  _saveMovies() {
+    List<String> toSave = savedMovie.map((movie) => jsonEncode(movie)).toList();
+    pref.setStringList(PREF_SAVED_MOVIE, toSave);
   }
 
   List<TvDetails> _getTv(String key){
@@ -82,6 +76,16 @@ class ShowStorageHelper {
       List<String> savedList = pref.getStringList(key);
       List<TvDetails> tv = savedList.map((string) => TvDetails.fromJson(jsonDecode(string))).toList();
       return tv;
+    } else {
+      return null;
+    }
+  }
+
+  List<MovieDetails> _getMovie(String key){
+    if (pref.containsKey(key)) {
+      List<String> savedList = pref.getStringList(key);
+      List<MovieDetails> movies = savedList.map((string) => MovieDetails.fromMap(jsonDecode(string))).toList();
+      return movies;
     } else {
       return null;
     }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:my_show/page/home_carousel_page.dart';
+import 'package:my_show/page/home_page.dart';
 import 'package:my_show/show_storage_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
         primaryColor: Colors.white,
         canvasColor: Colors.grey,
       ),
-      home: CarouselPage(pref: pref,),
+      home: HomePage(pref: pref,),
     );
   }
 }

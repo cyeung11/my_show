@@ -5,11 +5,14 @@ import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 
 import '../asset_path.dart';
+import '../show_storage_helper.dart';
 
 class TvDetailPage extends StatefulWidget{
   final int id;
 
-  TvDetailPage({@required this.id, Key key}): super(key: key);
+  final ShowStorageHelper pref;
+
+  TvDetailPage({@required this.id, @required this.pref, Key key}): super(key: key);
 
   @override
   State createState() => _TvPageState();
@@ -22,36 +25,54 @@ class _TvPageState extends State<TvDetailPage>{
   @override
   Widget build(BuildContext context) {
     if (_details == null) {
-      _details = getTVDetail(widget.id);
+      _loadData(context);
     }
+
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.black,
-        body:  Stack(
-          children: <Widget>[
-            FutureBuilder<TvDetails>(
-              future: _details,
-              builder: (context, snapshot){
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: CircularProgressIndicator(),
-                  );
-                } else if (snapshot.data == null) {
-                  _showRetrySnackbar(context);
-                  return Container();
-                } else {
-                  return _buildDetails(snapshot.data);
-                }
-              },
-            ),
-            Container(
-              margin: EdgeInsets.symmetric(vertical: 5, horizontal: 12),
-              child:
-              BackButton(
-                color: Colors.white,
-              ),
-            ),
-          ],
+        body: FutureBuilder<TvDetails>(
+          future: _details,
+          builder: (context, snapshot){
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Container(
+                constraints: BoxConstraints.expand(),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    Positioned(
+                      top: 5, left: 5,
+                      child: BackButton(color: Colors.white,),
+                    ),
+                    CircularProgressIndicator()
+                  ],
+                ),
+              );
+            } else if (snapshot.data == null) {
+              return Container(
+                constraints: BoxConstraints.expand(),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    Positioned(
+                      top: 5, left: 5,
+                      child: BackButton(color: Colors.white,),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.refresh, color: Colors.white, size: 50,),
+                      onPressed: (){
+                        setState(() {
+                          _loadData(context);
+                        });
+                      },
+                    )
+                  ],
+                ),
+              );
+            } else {
+              return _buildDetails(snapshot.data);
+            }
+          },
         ),
       ),
     );
@@ -64,6 +85,8 @@ class _TvPageState extends State<TvDetailPage>{
     var backdropHeight = screenWidth / 1.78;
     var posterTopSpace = backdropHeight * 0.5;
     var headerHeight = posterTopSpace + posterHeight;
+
+    var isFav = widget.pref.isTvSaved(widget.id);
 
     return SizedBox(
       height: headerHeight,
@@ -88,6 +111,31 @@ class _TvPageState extends State<TvDetailPage>{
               fit: BoxFit.scaleDown,
               placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
               height: posterHeight, width: posterWidth,
+            ),
+          ),
+          Positioned(
+            top: 5,
+            left: 5,
+            child: BackButton(
+              color: Colors.white,
+            ),
+          ),
+          Positioned(
+            top: 5,
+            right: 5,
+            child:  IconButton(
+              icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
+              onPressed: (){
+                setState(() {
+                  if (isFav) {
+                    widget.pref.removeTv(widget.id);
+                  } else {
+                    getTVDetail(widget.id).then((tv){
+                      widget.pref.addTv(tv);
+                    });
+                  }
+                });
+              },
             ),
           ),
         ],

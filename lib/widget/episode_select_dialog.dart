@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_show/model/season.dart';
 
-import 'model/watch_progress.dart';
+import '../model/watch_progress.dart';
 
 class EpisodeSelectDialog extends StatelessWidget {
   final List<WatchProgress> selectable;

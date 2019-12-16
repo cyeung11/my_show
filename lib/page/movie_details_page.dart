@@ -5,11 +5,14 @@ import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 
 import '../asset_path.dart';
+import '../show_storage_helper.dart';
 
 class MovieDetailPage extends StatefulWidget{
   final int id;
 
-  MovieDetailPage({@required this.id, Key key}): super(key: key);
+  final ShowStorageHelper pref;
+
+  MovieDetailPage({@required this.id,  @required this.pref, Key key}): super(key: key);
 
   @override
   State createState() => _MovieDetailPageState();
@@ -22,48 +25,68 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
   @override
   Widget build(BuildContext context) {
     if (_details == null) {
-      _details = getMovieDetail(widget.id);
+      _loadData(context);
     }
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.black,
-        body:  Stack(
-          children: <Widget>[
+        body:
             FutureBuilder<MovieDetails>(
               future: _details,
               builder: (context, snapshot){
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: CircularProgressIndicator(),
+                  return Container(
+                    constraints: BoxConstraints.expand(),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: <Widget>[
+                        Positioned(
+                          top: 5, left: 5,
+                          child: BackButton(color: Colors.white,),
+                        ),
+                        CircularProgressIndicator()
+                      ],
+                    ),
                   );
                 } else if (snapshot.data == null) {
-                  _showRetrySnackbar(context);
-                  return Container();
+                  return Container(
+                    constraints: BoxConstraints.expand(),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: <Widget>[
+                        Positioned(
+                          top: 5, left: 5,
+                          child: BackButton(color: Colors.white,),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.refresh, color: Colors.white, size: 50,),
+                          onPressed: (){
+                            setState(() {
+                              _loadData(context);
+                            });
+                          },
+                        )
+                      ],
+                    ),
+                  );
                 } else {
                   return _buildDetails(snapshot.data);
                 }
               },
             ),
-            Container(
-              margin: EdgeInsets.symmetric(vertical: 5, horizontal: 12),
-              child:
-              BackButton(
-                color: Colors.white,
-              ),
-            ),
-          ],
         ),
-      ),
     );
   }
 
-  Widget _headerImage(String poster, String backdrop){
+  Widget _headerImage(MovieDetails detail){
     var screenWidth = MediaQuery.of(context).size.width;
     var posterWidth = screenWidth *0.4;
     var posterHeight = posterWidth * 1.5;
     var backdropHeight = screenWidth / 1.78;
     var posterTopSpace = backdropHeight * 0.5;
     var headerHeight = posterTopSpace + posterHeight;
+
+    var isFav = widget.pref.isMovieSaved(widget.id);
 
     return SizedBox(
       height: headerHeight,
@@ -74,7 +97,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
             width: screenWidth,
             height: backdropHeight,
             child: CachedNetworkImage(
-                imageUrl: IMAGE_MID_PREFIX + backdrop,
+                imageUrl: IMAGE_MID_PREFIX + detail.backdrop,
                 fit: BoxFit.scaleDown,
                 placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
                 height: backdropHeight, width: screenWidth
@@ -84,15 +107,39 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
             top: posterTopSpace,
             height: posterHeight, width: posterWidth,
             child: CachedNetworkImage(
-              imageUrl: IMAGE_PREFIX + poster,
+              imageUrl: IMAGE_PREFIX + detail.poster,
               fit: BoxFit.scaleDown,
               placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
               height: posterHeight, width: posterWidth,
             ),
           ),
+          Positioned(
+            top: 5,
+            left: 5,
+            child: BackButton(
+              color: Colors.white,
+            ),
+          ),
+          Positioned(
+            top: 5,
+            right: 5,
+            child:  IconButton(
+              icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
+              onPressed: (){
+                setState(() {
+                  if (isFav) {
+                    widget.pref.removeShow(widget.id);
+                  } else {
+                    widget.pref.addShow(detail);
+                  }
+                });
+              },
+            ),
+          ),
         ],
       ),
     );
+
   }
 
   Widget _buildDetails(MovieDetails detail){
@@ -106,7 +153,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
 
     return ListView(
       children: <Widget>[
-        _headerImage(detail.poster, detail.backdrop),
+        _headerImage(detail),
         Padding(
           padding: EdgeInsets.only(left: 16, right: 16, top: 10),
           child: Text(
