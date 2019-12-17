@@ -31,50 +31,50 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
       child: Scaffold(
         backgroundColor: Colors.black,
         body:
-            FutureBuilder<MovieDetails>(
-              future: _details,
-              builder: (context, snapshot){
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Container(
-                    constraints: BoxConstraints.expand(),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: <Widget>[
-                        Positioned(
-                          top: 5, left: 5,
-                          child: BackButton(color: Colors.white,),
-                        ),
-                        CircularProgressIndicator()
-                      ],
+        FutureBuilder<MovieDetails>(
+          future: _details,
+          builder: (context, snapshot){
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Container(
+                constraints: BoxConstraints.expand(),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    Positioned(
+                      top: 5, left: 5,
+                      child: BackButton(color: Colors.white,),
                     ),
-                  );
-                } else if (snapshot.data == null) {
-                  return Container(
-                    constraints: BoxConstraints.expand(),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: <Widget>[
-                        Positioned(
-                          top: 5, left: 5,
-                          child: BackButton(color: Colors.white,),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.refresh, color: Colors.white, size: 50,),
-                          onPressed: (){
-                            setState(() {
-                              _loadData(context);
-                            });
-                          },
-                        )
-                      ],
+                    CircularProgressIndicator()
+                  ],
+                ),
+              );
+            } else if (snapshot.data == null) {
+              return Container(
+                constraints: BoxConstraints.expand(),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    Positioned(
+                      top: 5, left: 5,
+                      child: BackButton(color: Colors.white,),
                     ),
-                  );
-                } else {
-                  return _buildDetails(snapshot.data);
-                }
-              },
-            ),
+                    IconButton(
+                      icon: Icon(Icons.refresh, color: Colors.white, size: 50,),
+                      onPressed: (){
+                        setState(() {
+                          _loadData(context);
+                        });
+                      },
+                    )
+                  ],
+                ),
+              );
+            } else {
+              return _buildDetails(snapshot.data);
+            }
+          },
         ),
+      ),
     );
   }
 
@@ -97,7 +97,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
             width: screenWidth,
             height: backdropHeight,
             child: CachedNetworkImage(
-                imageUrl: IMAGE_MID_PREFIX + detail.backdrop,
+                imageUrl: IMAGE_MID_PREFIX + detail.backdropPath,
                 fit: BoxFit.scaleDown,
                 placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
                 height: backdropHeight, width: screenWidth
@@ -107,7 +107,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
             top: posterTopSpace,
             height: posterHeight, width: posterWidth,
             child: CachedNetworkImage(
-              imageUrl: IMAGE_PREFIX + detail.poster,
+              imageUrl: IMAGE_PREFIX + detail.posterPath,
               fit: BoxFit.scaleDown,
               placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
               height: posterHeight, width: posterWidth,
@@ -126,12 +126,11 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
             child:  IconButton(
               icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
               onPressed: (){
-                setState(() {
-                  if (isFav) {
-                    widget.pref.removeShow(widget.id);
-                  } else {
-                    widget.pref.addShow(detail);
-                  }
+                var future = isFav
+                    ? widget.pref.removeMovie(widget.id)
+                    : widget.pref.addMovie(detail);
+                future.whenComplete((){
+                  setState(() {});
                 });
               },
             ),
@@ -157,7 +156,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
         Padding(
           padding: EdgeInsets.only(left: 16, right: 16, top: 10),
           child: Text(
-            detail.title,
+            (detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '',
             style: TextStyle(
               fontSize: 24.0,
               color: Colors.white,

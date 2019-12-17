@@ -22,7 +22,7 @@ class TrendingPageManager{
   final MenuAnimator _animator;
   final ShowStorageHelper pref;
 
-  Future<MovieListResponse> _movies;
+  Future<ShowListResponse> _movies;
 
   var _currentCarouselPage = 0;
   var isMenuOverlay = false;
@@ -42,7 +42,7 @@ class TrendingPageManager{
       _reload(context, _currentType);
     }
     return Scaffold(
-      body: FutureBuilder<MovieListResponse>(
+      body: FutureBuilder<ShowListResponse>(
         future: _movies,
         builder: (context, snapshot) {
           return Container(
@@ -56,7 +56,7 @@ class TrendingPageManager{
     );
   }
 
-  List<Widget> _body(BuildContext context, AsyncSnapshot<MovieListResponse> snapshot) {
+  List<Widget> _body(BuildContext context, AsyncSnapshot<ShowListResponse> snapshot) {
     var bodies = List<Widget>();
     bodies.add(
       SafeArea(
@@ -110,7 +110,7 @@ class TrendingPageManager{
     return bodies;
   }
 
-  Widget _showDetail(AsyncSnapshot<MovieListResponse> snapshot) {
+  Widget _showDetail(AsyncSnapshot<ShowListResponse> snapshot) {
     var hasMovie = snapshot.connectionState == ConnectionState.done && snapshot?.data?.result?.isNotEmpty == true && ((snapshot?.data?.result?.length ?? -1) > _currentCarouselPage);
     if (hasMovie) {
       var currentMovie = snapshot?.data?.result[_currentCarouselPage];
@@ -230,7 +230,7 @@ class TrendingPageManager{
     }
   }
 
-  Widget _carousel(AsyncSnapshot<MovieListResponse> snapshot) {
+  Widget _carousel(AsyncSnapshot<ShowListResponse> snapshot) {
     if (snapshot.connectionState == ConnectionState.done) {
       if (snapshot.data?.result?.isNotEmpty == true) {
         return Swiper(
@@ -389,7 +389,7 @@ class TrendingPageManager{
         return GET_MOVIE_TOP_RATE;
       }
       case TrendingType.MovieUpcoming: {
-        return GET_UPCOMING;
+        return GET_MOVIE_UPCOMING;
       }
       case TrendingType.MoviePopular: {
         return GET_MOVIE_POPULAR;

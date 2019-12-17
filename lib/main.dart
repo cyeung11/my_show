@@ -6,12 +6,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 
 void main(){
+  WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then((_){
     SharedPreferences.getInstance().then((pref){
-      runApp(MyApp(pref: ShowStorageHelper(pref),));
+      var storageHelper = ShowStorageHelper(pref);
+      runApp(MyApp(pref: storageHelper,));
     });
   });
 }
+
+
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.

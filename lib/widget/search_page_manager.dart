@@ -14,30 +14,48 @@ import '../show_storage_helper.dart';
 class SearchPageManager{
 
   String _query;
-  Future<MovieListResponse> _movies;
+
+  bool _isLoading = false;
+  int _currentPage = 1;
+
+  bool _isTv = true;
 
   final VoidCallback onUpdate;
-  final VoidCallback onTypeToggle;
 
   final ShowStorageHelper pref;
+  final ScrollController _scrollController = ScrollController();
 
-  SearchPageManager(this.onUpdate, this.onTypeToggle, this.pref);
+  final List<Show> _shows = List<Show>();
+  int _totalPage;
 
-  Widget build(BuildContext context, bool isTv){
+  SearchPageManager(this.onUpdate, this.pref){
+    _scrollController.addListener(_scrollListener);
+  }
+
+  _scrollListener() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent && _query?.isNotEmpty == true) {
+      if (_currentPage + 1 <= _totalPage) {
+        _currentPage++;
+        _isLoading = true;
+
+        onUpdate();
+
+        getShows(_isTv ? SEARCH_TV : SEARCH_MOVIE, _query, _currentPage).then((data){
+          onDataReturn(data);
+        });
+      }
+    }
+  }
+
+  Widget build(BuildContext context){
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Container(
-            color: Colors.black,
             child: Column(
               children: <Widget>[
-                _searchTextBox(isTv),
-                FutureBuilder<MovieListResponse>(
-                  future: _movies,
-                  builder: (context, snapshot){
-                    return buildResultList(context, snapshot);
-                  },
-                )
+                _searchTextBox(_isTv),
+                buildResultList(context)
               ],
             )
         ),
@@ -80,10 +98,16 @@ class SearchPageManager{
                         _query = query.trim();
                       },
                       onSubmitted: (query){
-                        if (query != null) {
+                        if (query?.isNotEmpty == true) {
                           _query = query.trim();
-                          _movies = getShows(!isTv ? SEARCH_MOVIE : SEARCH_TV, _query, 1);
+                          _currentPage = 1;
+                          _shows.clear();
+                          _isLoading = true;
                           onUpdate();
+
+                          getShows(!isTv ? SEARCH_MOVIE : SEARCH_TV, _query, _currentPage).then((data){
+                            onDataReturn(data);
+                          });
                         }
                       },
                     ),
@@ -98,9 +122,19 @@ class SearchPageManager{
           icon: Icon( !isTv ? Icons.live_tv : Icons.movie, color: Colors.white,),
           onPressed: (){
             if (_query?.isNotEmpty == true) {
-              _movies = getShows(isTv ? SEARCH_MOVIE : SEARCH_TV, _query, 1);
+              _currentPage = 1;
+              _shows.clear();
+              _isLoading = true;
+              _isTv = !_isTv;
+              onUpdate();
+
+              getShows(isTv ? SEARCH_MOVIE : SEARCH_TV, _query, _currentPage).then((data){
+                onDataReturn(data);
+              });
+            } else {
+              _isTv = !_isTv;
+              onUpdate();
             }
-            onTypeToggle();
           },
         ),
         SizedBox(width: 12,)
@@ -108,26 +142,37 @@ class SearchPageManager{
     );
   }
 
-  Widget buildResultList(BuildContext context, AsyncSnapshot<MovieListResponse> snapshot){
-    if (snapshot.connectionState == ConnectionState.waiting) {
-      return Padding(padding: EdgeInsets.only(top: 10), child: CircularProgressIndicator());
+  Widget buildResultList(BuildContext context){
+    if (_shows.isEmpty) {
+      if (_isLoading) {
+        return Padding(padding: EdgeInsets.only(top: 10), child: CircularProgressIndicator());
+      } else {
+        return Container();
+      }
     }
 
-    var list = snapshot?.data?.result ?? List<Show>();
-    if (list.isEmpty) {
-      return Container();
+    var entries = ListTile.divideTiles(
+        color: Colors.white30,
+        context: context,
+        tiles: _shows.map((Show currentMovie){
+          return _movieEntry(context, currentMovie);
+        }
+        )
+    ).toList();
+
+    if (_isLoading) {
+      entries.add(SizedBox(
+        height: 100,
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      ));
     }
 
     return Expanded(
       child: ListView(
-          children: ListTile.divideTiles(
-              color: Colors.white30,
-              context: context,
-              tiles: list.map((Show currentMovie){
-                return _movieEntry(context, currentMovie);
-              }
-              )
-          ).toList()
+          controller: _scrollController,
+          children: entries
       ),
     );
   }
@@ -194,5 +239,20 @@ class SearchPageManager{
         );
       },
     );
+  }
+
+  onDataReturn(ShowListResponse response){
+    if (response != null) {
+      _totalPage = response.totalPage ?? 0;
+      if (response.result != null) {
+        _shows.addAll(response.result);
+      }
+      _isLoading = false;
+    }
+    onUpdate();
+  }
+
+  onDispose(){
+    _scrollController.dispose();
   }
 }

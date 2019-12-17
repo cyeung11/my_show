@@ -1,47 +1,66 @@
-import 'package:json_annotation/json_annotation.dart';
-
-part 'show.g.dart';
-
-@JsonSerializable()
 class Show {
 
   final int id;
   final String title; // for movie
   final String name; // for tv
-  @JsonKey(name: "original_title")
   final String originalTitle;
   final String overview;
-  @JsonKey(name: "original_language")
   final String language;
-  @JsonKey(name: "release_date")
   final String release;
-  @JsonKey(name: "first_air_date")
   final String firstAir;
-  @JsonKey(name: "genre_ids")
   final List<int> genres;
   final bool adult;
-  @JsonKey(name: "backdrop_path")
   final String backdrop;
-  @JsonKey(name: "poster_path")
   final String poster;
   final double popularity;
-  @JsonKey(name: "vote_count")
   final int voteCount;
-  @JsonKey(name: "vote_average")
   final double votePoint;
   final bool video;
 
-  int watchedSeason;
-  int watchedEpisode;
-
   bool isMovie() => (title != null);
-
-  factory Show.fromMap(Map<String, dynamic> json) => _$ShowFromJson(json);
-
-  Map<String, dynamic> toJson() => _$ShowToJson(this);
 
   Show(this.id, this.title, this.name, this.originalTitle, this.overview, this.language,
       this.release, this.firstAir, this.genres, this.adult, this.backdrop, this.poster,
-      this.popularity, this.voteCount, this.votePoint, this.video, this.watchedSeason, this.watchedEpisode);
+      this.popularity, this.voteCount, this.votePoint, this.video);
 
+
+  factory Show.fromJson(Map<String, dynamic> json) {
+    return Show(
+      json['id'] as int,
+      json['title'] as String,
+      json['name'] as String,
+      json['original_title'] as String,
+      json['overview'] as String,
+      json['original_language'] as String,
+      json['release_date'] as String,
+      json['first_air_date'] as String,
+      (json['genre_ids'] as List)?.map((e) => e as int)?.toList(),
+      json['adult'] as bool,
+      json['backdrop_path'] as String,
+      json['poster_path'] as String,
+      (json['popularity'] as num)?.toDouble(),
+      json['vote_count'] as int,
+      (json['vote_average'] as num)?.toDouble(),
+      json['video'] as bool,
+    );
+  }
+
+  Map<String, dynamic> toJson(Show instance) => <String, dynamic>{
+    'id': instance.id,
+    'title': instance.title,
+    'name': instance.name,
+    'original_title': instance.originalTitle,
+    'overview': instance.overview,
+    'original_language': instance.language,
+    'release_date': instance.release,
+    'first_air_date': instance.firstAir,
+    'genre_ids': instance.genres,
+    'adult': instance.adult,
+    'backdrop_path': instance.backdrop,
+    'poster_path': instance.poster,
+    'popularity': instance.popularity,
+    'vote_count': instance.voteCount,
+    'vote_average': instance.votePoint,
+    'video': instance.video,
+  };
 }

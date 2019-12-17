@@ -78,7 +78,7 @@ class _TvPageState extends State<TvDetailPage>{
     );
   }
 
-  Widget _headerImage(String poster, String backdrop){
+  Widget _headerImage(TvDetails tv){
     var screenWidth = MediaQuery.of(context).size.width;
     var posterWidth = screenWidth *0.4;
     var posterHeight = posterWidth * 1.5;
@@ -97,7 +97,7 @@ class _TvPageState extends State<TvDetailPage>{
             width: screenWidth,
             height: backdropHeight,
             child: CachedNetworkImage(
-                imageUrl: IMAGE_MID_PREFIX + backdrop,
+                imageUrl: IMAGE_MID_PREFIX + tv.backdropPath,
                 fit: BoxFit.scaleDown,
                 placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
                 height: backdropHeight, width: screenWidth
@@ -107,7 +107,7 @@ class _TvPageState extends State<TvDetailPage>{
             top: posterTopSpace,
             height: posterHeight, width: posterWidth,
             child: CachedNetworkImage(
-              imageUrl: IMAGE_PREFIX + poster,
+              imageUrl: IMAGE_PREFIX + tv.posterPath,
               fit: BoxFit.scaleDown,
               placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
               height: posterHeight, width: posterWidth,
@@ -126,14 +126,11 @@ class _TvPageState extends State<TvDetailPage>{
             child:  IconButton(
               icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
               onPressed: (){
-                setState(() {
-                  if (isFav) {
-                    widget.pref.removeTv(widget.id);
-                  } else {
-                    getTVDetail(widget.id).then((tv){
-                      widget.pref.addTv(tv);
-                    });
-                  }
+                var future = isFav
+                    ? widget.pref.removeTv(widget.id)
+                    : widget.pref.addTv(tv);
+                future.whenComplete((){
+                  setState(() {});
                 });
               },
             ),
@@ -154,11 +151,11 @@ class _TvPageState extends State<TvDetailPage>{
 
     return ListView(
       children: <Widget>[
-        _headerImage(detail.posterPath, detail.backdropPath),
+        _headerImage(detail),
         Padding(
           padding: EdgeInsets.only(left: 16, right: 16, top: 10),
           child: Text(
-            detail.name,
+            (detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '',
             style: TextStyle(
               fontSize: 24.0,
               color: Colors.white,

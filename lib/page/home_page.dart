@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:my_show/widget/browse_page_manager.dart';
 import 'package:my_show/widget/saved_page_manager.dart';
 import 'package:my_show/widget/search_page_manager.dart';
 import 'package:my_show/widget/trending_page_manager.dart';
@@ -19,13 +22,14 @@ class HomePage extends StatefulWidget{
 
 class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerProviderStateMixin {
 
+  static const platform = const MethodChannel('com.jkjk.my_show');
+
   var currentItem = 0;
   PageController _pageController;
   SearchPageManager _searchPageManager;
   SavedPageManager _savedPageManager;
   TrendingPageManager _trendingPageManager;
-
-  bool _tv = true;
+  BrowsePageManager _browsePageManager;
 
   @override
   void initState() {
@@ -37,20 +41,17 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerP
       setState(() {
       });
     };
-    VoidCallback typeToggleCallback = (){
-      setState(() {
-        _tv = !_tv;
-      });
-    };
     _pageController = PageController();
-    _searchPageManager = SearchPageManager(voidCallback, typeToggleCallback, widget.pref);
-    _savedPageManager = SavedPageManager(voidCallback, typeToggleCallback, widget.pref);
+    _searchPageManager = SearchPageManager(voidCallback, widget.pref);
+    _savedPageManager = SavedPageManager(voidCallback, widget.pref);
     _trendingPageManager = TrendingPageManager(voidCallback, MenuAnimator(this), widget.pref);
+    _browsePageManager = BrowsePageManager(voidCallback, widget.pref);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _searchPageManager.onDispose();
     super.dispose();
   }
 
@@ -64,7 +65,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerP
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () => Future.value(onBackPress()),
+      onWillPop: () => onBackPress(),
       child: Scaffold(
         bottomNavigationBar: _bottomBar(),
         body: PageView.builder(
@@ -88,13 +89,13 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerP
         return _trendingPageManager.build(context);
       }
       case 1: {
-        return Container(color: Colors.blue,);
+        return _browsePageManager.build(context);
       }
       case 2: {
-        return _searchPageManager.build(context, _tv);
+        return _searchPageManager.build(context);
       }
       case 3: {
-        return _savedPageManager.build(context, _tv);
+        return _savedPageManager.build(context);
       }
       default: {
         return _settingPage();
@@ -150,23 +151,32 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerP
   }
 
   /// return false to intercept the back press action
-  bool onBackPress(){
+  Future<bool> onBackPress() async {
     if (currentItem == 0) {
       if (_trendingPageManager.isMenuOverlay) {
         setState(() {
           _trendingPageManager.isMenuOverlay = false;
         });
-        return false;
+        return Future.value(false);
       }
     } else if (currentItem == 3) {
-      if ( _savedPageManager.deleteMode) {
+      if (_savedPageManager.deleteMode) {
         setState(() {
           _savedPageManager.deleteMode = false;
         });
-        return false;
+        return Future.value(false);
       }
     }
-    return true;
+
+    if (Platform.isAndroid) {
+      try {
+        return await platform.invokeMethod('backToExit');
+      } on PlatformException catch (e) {
+        print(e);
+      }
+    }
+
+    return Future.value(true);
   }
 
   Widget _settingPage(){
