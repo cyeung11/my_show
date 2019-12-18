@@ -20,7 +20,7 @@ import '../show_storage_helper.dart';
 class TrendingPageManager{
 
   final MenuAnimator _animator;
-  final ShowStorageHelper pref;
+  final ShowStorageHelper _pref;
 
   Future<ShowListResponse> _movies;
 
@@ -30,9 +30,9 @@ class TrendingPageManager{
 
   TrendingType _currentType;
 
-  final VoidCallback onUpdate;
+  final VoidCallback _onUpdate;
 
-  TrendingPageManager(this.onUpdate, this._animator, this.pref);
+  TrendingPageManager(this._onUpdate, this._animator, this._pref);
 
   Widget build(BuildContext context){
     if (_movies == null) {
@@ -91,14 +91,14 @@ class TrendingPageManager{
               _isTv = !_isTv;
               _currentType = _isTv ? TrendingType.TvPopular : TrendingType.MoviePopular;
               _movies = null;
-              onUpdate();
+              _onUpdate();
             },
           ),
           IconButton(
             icon: Icon(Icons.more_vert, color: Colors.white, size: 24,),
             onPressed: (){
               isMenuOverlay = true;
-              onUpdate();
+              _onUpdate();
             },
           )
         ],
@@ -120,7 +120,7 @@ class TrendingPageManager{
               decoration: BoxDecoration(
                 color: Colors.black,
                 image: DecorationImage(
-                  image: CachedNetworkImageProvider(IMAGE_PREFIX + currentMovie.backdrop),
+                  image: CachedNetworkImageProvider(IMAGE_PREFIX + (currentMovie.backdrop ?? '')),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -241,13 +241,13 @@ class TrendingPageManager{
                     MaterialPageRoute(
                         builder: (BuildContext _) {
                           var item = snapshot.data?.result[index];
-                          return item.isMovie() ? MovieDetailPage(id: item.id, pref: pref,) : TvDetailPage(id: item.id, pref: pref,);
+                          return item.isMovie() ? MovieDetailPage(id: item.id, pref: _pref,) : TvDetailPage(id: item.id, pref: _pref,);
                         }
                     )
                 );
               },
               child: CachedNetworkImage(
-                  imageUrl: IMAGE_PREFIX + snapshot.data?.result[index].poster,
+                  imageUrl: IMAGE_PREFIX + (snapshot.data?.result[index].poster ?? ''),
                   fit: BoxFit.scaleDown,
                   placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
                   height: 400,
@@ -260,7 +260,7 @@ class TrendingPageManager{
           index: _currentCarouselPage,
           onIndexChanged: ((index) {
             _currentCarouselPage = index;
-            onUpdate();
+            _onUpdate();
           }),
         );
       }
@@ -274,75 +274,80 @@ class TrendingPageManager{
       _movies = null;
     }
     isMenuOverlay = false;
-    onUpdate();
+    _onUpdate();
   }
 
   Widget _menuOverlay(BuildContext context) {
     _animator._startAnimate();
-    return Container(
-      color: Colors.black87,
-      constraints: BoxConstraints.expand(),
-      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: <Widget>[
-          SlideTransition(
-            position: _animator._animation3,
-            child: IconButton(
-              icon: Icon(Icons.clear, size: 24, color: Colors.white,),
-              onPressed: () => _onMenuSelect(_currentType),
-            ),
-          ),
-          SlideTransition(
-            position: _animator._animation3,
-            child:
-            FlatButton.icon(
-              padding: EdgeInsets.all(10),
-              onPressed: () => _onMenuSelect(_isTv ? TrendingType.TvPopular : TrendingType.MoviePopular),
-              icon: Icon(Icons.star, size: 20, color: (_currentType == TrendingType.TvPopular || _currentType == TrendingType.MoviePopular) ? Colors.orangeAccent : Colors.white),
-              label: Text("Popular",
-                style: TextStyle(color: (_currentType == TrendingType.TvPopular || _currentType == TrendingType.MoviePopular) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
+    return InkWell(
+      child: Container(
+        color: Colors.black87,
+        constraints: BoxConstraints.expand(),
+        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: <Widget>[
+            SlideTransition(
+              position: _animator._animation3,
+              child: IconButton(
+                icon: Icon(Icons.clear, size: 24, color: Colors.white,),
+                onPressed: () => _onMenuSelect(_currentType),
               ),
             ),
-          ),
-          SlideTransition(
-            position: _animator._animation2,
-            child: FlatButton.icon(
-              padding: EdgeInsets.all(10),
-              onPressed: () => _onMenuSelect(_isTv ? TrendingType.TvLatest : TrendingType.MovieLatest),
-              icon: Icon(Icons.new_releases, size: 20, color: (_currentType == TrendingType.TvLatest || _currentType == TrendingType.MovieLatest) ? Colors.orangeAccent : Colors.white),
-              label: Text("Latest",
-                style: TextStyle(color: (_currentType == TrendingType.TvLatest || _currentType == TrendingType.MovieLatest) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
+            SlideTransition(
+              position: _animator._animation3,
+              child:
+              FlatButton.icon(
+                padding: EdgeInsets.all(10),
+                onPressed: () => _onMenuSelect(_isTv ? TrendingType.TvPopular : TrendingType.MoviePopular),
+                icon: Icon(Icons.star, size: 20, color: (_currentType == TrendingType.TvPopular || _currentType == TrendingType.MoviePopular) ? Colors.orangeAccent : Colors.white),
+                label: Text("Popular",
+                  style: TextStyle(color: (_currentType == TrendingType.TvPopular || _currentType == TrendingType.MoviePopular) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
+                ),
               ),
             ),
-          ),
-          SlideTransition(
-            position: _animator._animation2,
-            child:
-            FlatButton.icon(
-              padding: EdgeInsets.all(10),
-              onPressed: () => _onMenuSelect(_isTv ? TrendingType.TvTopRate : TrendingType.TvTopRate),
-              icon: Icon(Icons.thumb_up, size: 20, color: (_currentType == TrendingType.TvTopRate || _currentType == TrendingType.MovieTopRate) ? Colors.orangeAccent : Colors.white),
-              label: Text("Top Rated",
-                style: TextStyle(color: (_currentType == TrendingType.TvTopRate || _currentType == TrendingType.MovieTopRate) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
+            SlideTransition(
+              position: _animator._animation2,
+              child: FlatButton.icon(
+                padding: EdgeInsets.all(10),
+                onPressed: () => _onMenuSelect(_isTv ? TrendingType.TvLatest : TrendingType.MovieLatest),
+                icon: Icon(Icons.new_releases, size: 20, color: (_currentType == TrendingType.TvLatest || _currentType == TrendingType.MovieLatest) ? Colors.orangeAccent : Colors.white),
+                label: Text("Latest",
+                  style: TextStyle(color: (_currentType == TrendingType.TvLatest || _currentType == TrendingType.MovieLatest) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
+                ),
               ),
             ),
-          ),
-          SlideTransition(
-            position: _animator._animation1,
-            child:
-            FlatButton.icon(
-              padding: EdgeInsets.all(10),
-              onPressed: () => _onMenuSelect(_isTv ? TrendingType.TvOnAir : TrendingType.MovieUpcoming),
-              icon: Icon(_isTv ?Icons.play_arrow : Icons.calendar_today, size: 20,
-                  color: (_currentType == TrendingType.TvOnAir || _currentType == TrendingType.MovieUpcoming) ? Colors.orangeAccent : Colors.white),
-              label: Text(_isTv ? 'On the Air' : 'Upcoming' ,
-                style: TextStyle(color: (_currentType == TrendingType.TvOnAir || _currentType == TrendingType.MovieUpcoming) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
+            SlideTransition(
+              position: _animator._animation2,
+              child:
+              FlatButton.icon(
+                padding: EdgeInsets.all(10),
+                onPressed: () => _onMenuSelect(_isTv ? TrendingType.TvTopRate : TrendingType.TvTopRate),
+                icon: Icon(Icons.thumb_up, size: 20, color: (_currentType == TrendingType.TvTopRate || _currentType == TrendingType.MovieTopRate) ? Colors.orangeAccent : Colors.white),
+                label: Text("Top Rated",
+                  style: TextStyle(color: (_currentType == TrendingType.TvTopRate || _currentType == TrendingType.MovieTopRate) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
+                ),
               ),
             ),
-          ),
-        ],
+            SlideTransition(
+              position: _animator._animation1,
+              child:
+              FlatButton.icon(
+                padding: EdgeInsets.all(10),
+                onPressed: () => _onMenuSelect(_isTv ? TrendingType.TvOnAir : TrendingType.MovieUpcoming),
+                icon: Icon(_isTv ?Icons.play_arrow : Icons.calendar_today, size: 20,
+                    color: (_currentType == TrendingType.TvOnAir || _currentType == TrendingType.MovieUpcoming) ? Colors.orangeAccent : Colors.white),
+                label: Text(_isTv ? 'On the Air' : 'Upcoming' ,
+                  style: TextStyle(color: (_currentType == TrendingType.TvOnAir || _currentType == TrendingType.MovieUpcoming) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
+      onTap: (){
+        _onMenuSelect(_currentType);
+      },
     );
 
   }
@@ -353,7 +358,7 @@ class TrendingPageManager{
         label: 'Retry',
         onPressed: () {
           _reload(context, type);
-          onUpdate();
+          _onUpdate();
         },
       ),
     );

@@ -3,11 +3,12 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:my_show/model/genre.dart';
 import 'package:my_show/model/movie_details.dart';
+import 'package:my_show/model/sort.dart';
 import 'package:my_show/model/tv_details.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/api_key.dart';
+import 'package:my_show/network/response/credit_response.dart';
 import 'package:my_show/network/response/genre_list_response.dart';
-import 'package:my_show/widget/browse_page_manager.dart';
 
 import 'response/movie_list_response.dart';
 
@@ -48,30 +49,11 @@ Future<ShowListResponse> discover(bool forTv, int year, double voteAverage, Genr
   if (page != null) {
     queryParameters['page'] = page.toString();
   }
-  if (genre != null) {
+  if (genre?.id != null) {
     queryParameters['with_genres'] = genre.id.toString();
   }
   if (sort != null) {
-    switch (sort) {
-      case SortType.VoteDesc:
-        queryParameters['sort_by'] = 'vote_average.desc';
-        break;
-      case SortType.VoteAsc:
-        queryParameters['sort_by'] = 'vote_average.asc';
-        break;
-      case SortType.PopularityDesc:
-        queryParameters['sort_by'] = 'popularity.desc';
-        break;
-      case SortType.PopularityAsc:
-        queryParameters['sort_by'] = 'popularity.asc';
-        break;
-      case SortType.ReleaseAsc:
-        queryParameters['sort_by'] = forTv ? 'first_air_date.asc' : 'release_date.asc';
-        break;
-      case SortType.ReleaseDesc:
-        queryParameters['sort_by'] = forTv ? 'first_air_date.desc' : 'release_date.desc';
-        break;
-    }
+    queryParameters['sort_by'] = sort.queryParam;
   }
 
   try {
@@ -95,6 +77,22 @@ Future<GenreListResponse> getGenre(String path) async {
     final response = await http.get(Uri.https(DOMAIN, path, queryParameters));
     if (response.statusCode == 200) {
       return GenreListResponse.fromMap(json.decode(response.body));
+    } else {
+      return null;
+    }
+  } catch (e) {
+    return null;
+  }
+}
+
+Future<CreditResponse> getCredit(bool forTv, int id) async {
+  var queryParameters = {
+    'api_key': API_KEY_V3,
+  };
+  try {
+    final response = await http.get(Uri.https(DOMAIN, (forTv ? GET_TV_DETAIL : GET_MOVIE_DETAIL) + id.toString() + CREDIT, queryParameters));
+    if (response.statusCode == 200) {
+      return CreditResponse.fromMap(json.decode(response.body));
     } else {
       return null;
     }

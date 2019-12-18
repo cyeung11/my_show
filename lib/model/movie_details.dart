@@ -1,4 +1,3 @@
-import 'package:intl/intl.dart';
 import 'package:my_show/model/country.dart';
 import 'package:my_show/model/details.dart';
 import 'package:my_show/model/genre.dart';
@@ -53,11 +52,6 @@ class MovieDetails extends Details {
       voteAverage: json['vote_average'],
       voteCount: json['vote_count'],
     );
-  }
-
-  DateTime getReleaseDate(){
-    DateFormat format = DateFormat("yyyy-MM-dd");
-    return format.parse(release);
   }
 
   Map<String, dynamic> toJson() {

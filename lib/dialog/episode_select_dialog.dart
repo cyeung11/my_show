@@ -6,17 +6,15 @@ import '../model/watch_progress.dart';
 class EpisodeSelectDialog extends StatelessWidget {
   final List<WatchProgress> selectable;
 
-  final ValueChanged<WatchProgress> onEpisodeSelected;
-
   final WatchProgress currentProgress;
 
   final int scrollIndex;
 
   final ScrollController _scrollController = ScrollController();
 
-  EpisodeSelectDialog({@required this.selectable, @required this.scrollIndex, @required this.currentProgress, @required this.onEpisodeSelected, Key key}): super(key: key);
+  EpisodeSelectDialog({@required this.selectable, @required this.scrollIndex, @required this.currentProgress, Key key}): super(key: key);
 
-  factory EpisodeSelectDialog.show({@required List<Season> seasons, WatchProgress currentProgress, @required ValueChanged<WatchProgress> onEpisodeSelected, Key key}){
+  factory EpisodeSelectDialog.show({@required List<Season> seasons, WatchProgress currentProgress, Key key}){
     List<WatchProgress> selectableList = List<WatchProgress>();
     int scroll = 0;
 
@@ -47,7 +45,7 @@ class EpisodeSelectDialog extends StatelessWidget {
       scroll = 0;
     }
 
-    return EpisodeSelectDialog(selectable: selectableList, scrollIndex: scroll, currentProgress: currentProgress, onEpisodeSelected: onEpisodeSelected, key: key,);
+    return EpisodeSelectDialog(selectable: selectableList, scrollIndex: scroll, currentProgress: currentProgress, key: key,);
   }
 
   @override
@@ -63,6 +61,7 @@ class EpisodeSelectDialog extends StatelessWidget {
       elevation: 1.0,
       backgroundColor: Colors.white,
       child: ListView(
+          shrinkWrap: true,
           controller: _scrollController,
           children: ListTile.divideTiles(
               color: Colors.black54,
@@ -74,8 +73,7 @@ class EpisodeSelectDialog extends StatelessWidget {
                   onTap:
                   isEpisode
                       ? (){
-                    Navigator.of(context).pop();
-                    onEpisodeSelected(episodeSelectable);
+                    Navigator.of(context).pop(episodeSelectable);
                   }
                       : null,
                 );
@@ -114,7 +112,7 @@ class EpisodeSelectDialog extends StatelessWidget {
     ));
     if (currentProgress.episodeNo == episodeSelectable.episodeNo && currentProgress.seasonNo == episodeSelectable.seasonNo) {
       result.add(Spacer());
-      result.add(Icon(Icons.check));
+      result.add(Icon(Icons.remove_red_eye));
       result.add(SizedBox(width: 10));
     }
 

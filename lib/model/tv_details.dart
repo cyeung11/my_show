@@ -1,4 +1,3 @@
-import 'package:intl/intl.dart';
 import 'package:my_show/model/details.dart';
 import 'package:my_show/model/episode.dart';
 import 'package:my_show/model/role.dart';
@@ -107,10 +106,5 @@ class TvDetails extends Details {
             data['progress'] = this.progress.toJson();
         }
         return data;
-    }
-
-    DateTime getFirstAirDate(){
-        DateFormat format = DateFormat("yyyy-MM-dd");
-        return format.parse(firstAirDate);
     }
 }

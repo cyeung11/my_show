@@ -3,13 +3,14 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:my_show/model/movie_details.dart';
 import 'package:my_show/model/tv_details.dart';
+import 'package:my_show/model/watch_progress.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/page/movie_details_page.dart';
 import 'package:my_show/page/tv_details_page.dart';
 
 import '../asset_path.dart';
+import '../dialog/episode_select_dialog.dart';
 import '../show_storage_helper.dart';
-import 'episode_select_dialog.dart';
 
 class SavedPageManager{
 
@@ -17,14 +18,20 @@ class SavedPageManager{
 
   bool _isTv = true;
 
-  final VoidCallback onUpdate;
+  bool _needSave = false;
 
-  final ShowStorageHelper pref;
+  final VoidCallback _onUpdate;
 
-  SavedPageManager(this.onUpdate, this.pref);
+  final ShowStorageHelper _pref;
+
+  SavedPageManager(this._onUpdate, this._pref);
 
   saveToStorage(){
-    pref.saveTv();
+    if (_needSave) {
+      _pref.saveTv().whenComplete((){
+        _needSave = false;
+      });
+    }
   }
 
   Widget build(BuildContext context){
@@ -46,7 +53,7 @@ class SavedPageManager{
       brightness: Brightness.dark,
       backgroundColor: Colors.black,
       title: Text(
-        isTv ? 'TV' : 'Movies',
+        isTv ? 'My TV' : 'My Movies',
         style: TextStyle(
             color: Colors.white,
             fontSize: 20
@@ -58,7 +65,7 @@ class SavedPageManager{
           color: Colors.white,
           onPressed: (){
             _isTv = !_isTv;
-            onUpdate();
+            _onUpdate();
           },
         ),
         IconButton(
@@ -66,7 +73,7 @@ class SavedPageManager{
           color: Colors.white,
           onPressed: (){
             deleteMode = !deleteMode;
-            onUpdate();
+            _onUpdate();
           },
         ),
       ],
@@ -74,7 +81,7 @@ class SavedPageManager{
   }
 
   Widget _savedList(BuildContext context, bool isTv){
-    Map<int, dynamic> data = isTv ? pref.watchTv.asMap() : pref.savedMovie.asMap();
+    Map<int, dynamic> data = isTv ? _pref.watchTv.asMap() : _pref.savedMovie.asMap();
     if (data.isEmpty) {
       return Center(
         child: Text('Nothing yet :(',
@@ -122,7 +129,7 @@ class SavedPageManager{
           Navigator.of(context).push(
               MaterialPageRoute(
                   builder: (BuildContext _) {
-                    return isTv ? TvDetailPage(id: id, pref: pref,) : MovieDetailPage(id: id, pref: pref,);
+                    return isTv ? TvDetailPage(id: id, pref: _pref,) : MovieDetailPage(id: id, pref: _pref,);
                   }
               )
           );
@@ -182,15 +189,19 @@ class SavedPageManager{
     return Builder(
       builder: (BuildContext context){
         return _dismissible(context, (_){
-          pref.removeMovie(movie.id);
-          onUpdate();
+          _pref.removeMovie(movie.id).whenComplete((){
+            _needSave = false;
+          });
+          _onUpdate();
           Scaffold.of(context).showSnackBar(
               SnackBar(content: Text('Item removed'),
                 action: SnackBarAction(
                   label: 'Undo',
                   onPressed: () {
-                    pref.addMovie(movie, index: indexInList);
-                    onUpdate();
+                    _pref.addMovie(movie, index: indexInList).whenComplete((){
+                      _needSave = false;
+                    });
+                    _onUpdate();
                   },
                 ),
               )
@@ -231,15 +242,19 @@ class SavedPageManager{
         builder: (BuildContext context) {
           return _dismissible(context,
                   (_) {
-                pref.removeTv(tv.id);
-                onUpdate();
+                _pref.removeTv(tv.id).whenComplete((){
+                  _needSave = false;
+                });
+                _onUpdate();
                 Scaffold.of(context).showSnackBar(
                     SnackBar(content: Text('Item removed'),
                       action: SnackBarAction(
                         label: 'Undo',
                         onPressed: () {
-                          pref.addTv(tv, index: indexInList);
-                          onUpdate();
+                          _pref.addTv(tv, index: indexInList).whenComplete((){
+                            _needSave = false;
+                          });
+                          _onUpdate();
                         },
                       ),
                     )
@@ -307,11 +322,15 @@ class SavedPageManager{
                 onPressed: (){
                   Navigator.of(context).pop();
                   if (isTv) {
-                    pref.removeTv(id);
+                    _pref.removeTv(id).whenComplete((){
+                      _needSave = false;
+                    });
                   } else {
-                    pref.removeMovie(id);
+                    _pref.removeMovie(id).whenComplete((){
+                      _needSave = false;
+                    });
                   }
-                  onUpdate();
+                  _onUpdate();
                 },
               ),
             ],
@@ -333,7 +352,8 @@ class SavedPageManager{
             ? null
             : (){
           tv.progress = tv.progress.next(tv.seasons);
-          onUpdate();
+          _needSave = true;
+          _onUpdate();
         },
       ));
     }
@@ -363,7 +383,8 @@ class SavedPageManager{
                 ? null
                 : (){
               tv.progress = tv.progress.previous(tv.seasons);
-              onUpdate();
+              _needSave = true;
+              _onUpdate();
             },
           )
       );
@@ -373,18 +394,18 @@ class SavedPageManager{
   }
 
   _selectEpisode(BuildContext context, TvDetails tv){
-    showDialog(context: context,
+    showDialog<WatchProgress>(context: context,
         barrierDismissible: true,
         builder: (context){
           return EpisodeSelectDialog.show(
             seasons: tv.seasons,
             currentProgress: tv.progress,
-            onEpisodeSelected: (episode){
-              tv.progress = episode;
-              onUpdate();
-            },
           );
         }
-    );
+    ).then((progress){
+      tv.progress = progress;
+      _needSave = true;
+      _onUpdate();
+    });
   }
 }

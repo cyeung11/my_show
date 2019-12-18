@@ -20,15 +20,15 @@ class SearchPageManager{
 
   bool _isTv = true;
 
-  final VoidCallback onUpdate;
+  final VoidCallback _onUpdate;
 
-  final ShowStorageHelper pref;
+  final ShowStorageHelper _pref;
   final ScrollController _scrollController = ScrollController();
 
   final List<Show> _shows = List<Show>();
   int _totalPage;
 
-  SearchPageManager(this.onUpdate, this.pref){
+  SearchPageManager(this._onUpdate, this._pref){
     _scrollController.addListener(_scrollListener);
   }
 
@@ -38,7 +38,7 @@ class SearchPageManager{
         _currentPage++;
         _isLoading = true;
 
-        onUpdate();
+        _onUpdate();
 
         getShows(_isTv ? SEARCH_TV : SEARCH_MOVIE, _query, _currentPage).then((data){
           onDataReturn(data);
@@ -74,7 +74,7 @@ class SearchPageManager{
               borderRadius: BorderRadius.circular(50),
             ),
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 2, horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: <Widget>[
                   Icon(
@@ -97,13 +97,14 @@ class SearchPageManager{
                       onChanged: (query){
                         _query = query.trim();
                       },
+                      maxLines: 1,
                       onSubmitted: (query){
                         if (query?.isNotEmpty == true) {
                           _query = query.trim();
                           _currentPage = 1;
                           _shows.clear();
                           _isLoading = true;
-                          onUpdate();
+                          _onUpdate();
 
                           getShows(!isTv ? SEARCH_MOVIE : SEARCH_TV, _query, _currentPage).then((data){
                             onDataReturn(data);
@@ -126,14 +127,14 @@ class SearchPageManager{
               _shows.clear();
               _isLoading = true;
               _isTv = !_isTv;
-              onUpdate();
+              _onUpdate();
 
               getShows(isTv ? SEARCH_MOVIE : SEARCH_TV, _query, _currentPage).then((data){
                 onDataReturn(data);
               });
             } else {
               _isTv = !_isTv;
-              onUpdate();
+              _onUpdate();
             }
           },
         ),
@@ -233,7 +234,7 @@ class SearchPageManager{
         Navigator.of(context).push(
             MaterialPageRoute(
                 builder: (BuildContext _) {
-                  return movie.isMovie() ? MovieDetailPage(id: movie.id, pref: pref,) : TvDetailPage(id: movie.id, pref: pref,);
+                  return movie.isMovie() ? MovieDetailPage(id: movie.id, pref: _pref,) : TvDetailPage(id: movie.id, pref: _pref,);
                 }
             )
         );
@@ -249,7 +250,7 @@ class SearchPageManager{
       }
       _isLoading = false;
     }
-    onUpdate();
+    _onUpdate();
   }
 
   onDispose(){

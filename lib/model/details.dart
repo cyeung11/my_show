@@ -1,8 +1,9 @@
+import 'package:intl/intl.dart';
 import 'package:my_show/model/role.dart';
 
 import 'genre.dart';
 
-class Details {
+abstract class Details {
   String backdropPath;
   List<Genre> genres;
   String homePage;
@@ -22,23 +23,23 @@ class Details {
       this.posterPath, this.productionCompanies, this.status, this.voteCount,
       this.voteAverage});
 
-  factory Details.fromJson(Map<String, dynamic> json) {
-    return Details(
-      backdropPath: json['backdrop_path'],
-      genres: json['genres'] != null ? (json['genres'] as List).map((i) => Genre.fromMap(i)).toList() : null,
-      homePage: json['homepage'],
-      id: json['id'],
-      name: json['name'],
-      originalName: json['original_name'],
-      overview: json['overview'],
-      popularity: json['popularity'],
-      posterPath: json['poster_path'],
-      productionCompanies: json['production_companies'] != null ? (json['production_companies'] as List).map((i) => Role.fromJson(i)).toList() : null,
-      status: json['status'],
-      voteAverage: json['vote_average'],
-      voteCount: json['vote_count'],
-    );
-  }
+//  factory Details.fromJson(Map<String, dynamic> json) {
+//    return Details(
+//      backdropPath: json['backdrop_path'],
+//      genres: json['genres'] != null ? (json['genres'] as List).map((i) => Genre.fromMap(i)).toList() : null,
+//      homePage: json['homepage'],
+//      id: json['id'],
+//      name: json['name'],
+//      originalName: json['original_name'],
+//      overview: json['overview'],
+//      popularity: json['popularity'],
+//      posterPath: json['poster_path'],
+//      productionCompanies: json['production_companies'] != null ? (json['production_companies'] as List).map((i) => Role.fromJson(i)).toList() : null,
+//      status: json['status'],
+//      voteAverage: json['vote_average'],
+//      voteCount: json['vote_count'],
+//    );
+//  }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
@@ -60,5 +61,15 @@ class Details {
       data['production_companies'] = this.productionCompanies.map((v) => v.toJson()).toList();
     }
     return data;
+  }
+
+  static DateTime parseDate(String date){
+    DateFormat format = DateFormat("yyyy-MM-dd");
+    try {
+      return format.parse(date);
+    } catch (e) {
+      print(e);
+      return null;
+    }
   }
 }

@@ -1,6 +1,18 @@
-class Genre {
+import 'package:my_show/model/selectable.dart';
+
+class Genre implements Selectable {
   final int id;
   final String name;
+
+  @override
+  String getString() {
+    return name;
+  }
+
+  @override
+  bool isEqual(Selectable selectable) {
+    return selectable is Genre && selectable.id == id;
+  }
 
   Genre({this.id, this.name});
 
@@ -17,4 +29,5 @@ class Genre {
     data['name'] = this.name;
     return data;
   }
+
 }

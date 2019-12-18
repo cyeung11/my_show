@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:my_show/model/genre.dart';
+import 'package:my_show/model/selectable.dart';
 
-class GenreSelectDialog extends StatelessWidget {
-  final List<Genre> selectable;
+class SelectDialog<T extends Selectable> extends StatelessWidget {
+  final List<T> selectables;
+  final T currentSelect;
 
-  final ValueChanged<Genre> onGenreSelected;
-
-  GenreSelectDialog({@required this.selectable, @required this.onGenreSelected, Key key}): super(key: key);
+  SelectDialog({@required this.selectables, @required this.currentSelect, Key key}): super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -17,15 +16,15 @@ class GenreSelectDialog extends StatelessWidget {
       elevation: 1.0,
       backgroundColor: Colors.white,
       child: ListView(
+        shrinkWrap: true,
           children: ListTile.divideTiles(
               color: Colors.black54,
               context: context,
-              tiles: selectable.map((Genre genreSelectable){
+              tiles: selectables.map((T selectable){
                 return InkWell(
-                  child: buildSelectable(genreSelectable),
+                  child: buildSelectable(selectable),
                   onTap: () {
-                    Navigator.of(context).pop();
-                    onGenreSelected(genreSelectable);
+                    Navigator.of(context).pop(selectable);
                   }
                 );
               })
@@ -33,16 +32,17 @@ class GenreSelectDialog extends StatelessWidget {
     );
   }
 
-  Widget buildSelectable(Genre genre){
+  Widget buildSelectable(Selectable selectable){
     return Row(
       children: <Widget>[
         SizedBox(width: 10),
         Container(
           height: 45,
           child: Center(
-            child: Text(genre.name,
+            child: Text(selectable.getString(),
               style: TextStyle(
-                fontSize: 15,
+                fontSize: selectable.isEqual(currentSelect) ? 16 : 15,
+                fontWeight: selectable.isEqual(currentSelect) ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ),

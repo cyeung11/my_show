@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:my_show/widget/browse_page_manager.dart';
-import 'package:my_show/widget/saved_page_manager.dart';
-import 'package:my_show/widget/search_page_manager.dart';
-import 'package:my_show/widget/trending_page_manager.dart';
+import 'package:my_show/pagemanager/browse_page_manager.dart';
+import 'package:my_show/pagemanager/saved_page_manager.dart';
+import 'package:my_show/pagemanager/search_page_manager.dart';
+import 'package:my_show/pagemanager/trending_page_manager.dart';
 
 import '../show_storage_helper.dart';
 import 'info_page.dart';
@@ -24,7 +24,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerP
 
   static const platform = const MethodChannel('com.jkjk.my_show');
 
-  var currentItem = 0;
+  var _currentItem = 0;
   PageController _pageController;
   SearchPageManager _searchPageManager;
   SavedPageManager _savedPageManager;
@@ -52,6 +52,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerP
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _searchPageManager.onDispose();
+    _browsePageManager.onDispose();
     super.dispose();
   }
 
@@ -74,7 +75,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerP
           itemCount: 5,
           onPageChanged: (index){
             setState(() {
-              currentItem = index;
+              _currentItem = index;
             });
           },
           itemBuilder: (context, index) => _page(context, index),
@@ -105,13 +106,13 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerP
 
   Widget _bottomBar() {
     return BottomNavyBar(
-      selectedIndex: currentItem,
+      selectedIndex: _currentItem,
       backgroundColor: Colors.black,
       showElevation: true, // use this to remove appBar's elevation
       onItemSelected: (index) {
         setState(() {
-          currentItem = index;
-          _pageController.jumpToPage(currentItem);
+          _currentItem = index;
+          _pageController.jumpToPage(_currentItem);
 //          _pageController.animateToPage(currentItem, duration: Duration(milliseconds: 300), curve: Curves.easeIn);
         });
       },
@@ -152,14 +153,14 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerP
 
   /// return false to intercept the back press action
   Future<bool> onBackPress() async {
-    if (currentItem == 0) {
+    if (_currentItem == 0) {
       if (_trendingPageManager.isMenuOverlay) {
         setState(() {
           _trendingPageManager.isMenuOverlay = false;
         });
         return Future.value(false);
       }
-    } else if (currentItem == 3) {
+    } else if (_currentItem == 3) {
       if (_savedPageManager.deleteMode) {
         setState(() {
           _savedPageManager.deleteMode = false;
