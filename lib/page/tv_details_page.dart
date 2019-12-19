@@ -2,13 +2,17 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:my_show/model/cast.dart';
 import 'package:my_show/model/details.dart';
+import 'package:my_show/model/show.dart';
 import 'package:my_show/model/tv_details.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
+import 'package:my_show/network/response/credit_response.dart';
+import 'package:my_show/pagemanager/trending_page_manager.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import '../asset_path.dart';
 import '../show_storage_helper.dart';
+import 'crew_page.dart';
 
 class TvDetailPage extends StatefulWidget{
   final int id;
@@ -25,7 +29,8 @@ class _TvPageState extends State<TvDetailPage>{
 
   Future<TvDetails> _details;
 
-  List<Cast> _casts;
+  CreditResponse _credit;
+  List<Show> _similar;
 
   @override
   void initState() {
@@ -33,7 +38,14 @@ class _TvPageState extends State<TvDetailPage>{
     getCredit(true, widget.id).then((response){
       if (response?.cast?.isNotEmpty == true) {
         setState(() {
-          _casts = response.cast;
+          _credit = response;
+        });
+      }
+    });
+    getShows(GET_TV_DETAIL + widget.id.toString() + SIMILAR, null, null).then((response){
+      if (response?.result != null) {
+        setState(() {
+          _similar = response.result;
         });
       }
     });
@@ -45,14 +57,14 @@ class _TvPageState extends State<TvDetailPage>{
       _loadData(context);
     }
 
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: FutureBuilder<TvDetails>(
-          future: _details,
-          builder: (context, snapshot){
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Container(
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: FutureBuilder<TvDetails>(
+        future: _details,
+        builder: (context, snapshot){
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return SafeArea(
+              child: Container(
                 constraints: BoxConstraints.expand(),
                 child: Stack(
                   alignment: Alignment.center,
@@ -64,9 +76,11 @@ class _TvPageState extends State<TvDetailPage>{
                     CircularProgressIndicator()
                   ],
                 ),
-              );
-            } else if (snapshot.data == null) {
-              return Container(
+              ),
+            );
+          } else if (snapshot.data == null) {
+            return SafeArea(
+              child:  Container(
                 constraints: BoxConstraints.expand(),
                 child: Stack(
                   alignment: Alignment.center,
@@ -85,12 +99,12 @@ class _TvPageState extends State<TvDetailPage>{
                     )
                   ],
                 ),
-              );
-            } else {
-              return _buildDetails(snapshot.data);
-            }
-          },
-        ),
+              ),
+            );
+          } else {
+            return _buildDetails(snapshot.data);
+          }
+        },
       ),
     );
   }
@@ -110,7 +124,7 @@ class _TvPageState extends State<TvDetailPage>{
       child: Stack(
         alignment: Alignment.topCenter,
         children: <Widget>[
-          Positioned(
+          Container(
             width: screenWidth,
             height: backdropHeight,
             child: CachedNetworkImage(
@@ -118,6 +132,18 @@ class _TvPageState extends State<TvDetailPage>{
                 fit: BoxFit.scaleDown,
                 placeholder: (context, _) => Image.asset(BACKDROP_PLACEHOLDER),
                 height: backdropHeight, width: screenWidth
+            ),
+          ),
+          Container(
+            width: screenWidth,
+            height: backdropHeight,
+            decoration: BoxDecoration(
+                gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0, 0.4],
+                    colors: [Colors.black54, Colors.transparent]
+                )
             ),
           ),
           Positioned(
@@ -133,23 +159,27 @@ class _TvPageState extends State<TvDetailPage>{
           Positioned(
             top: 5,
             left: 5,
-            child: BackButton(
-              color: Colors.white,
+            child: SafeArea(
+              child: BackButton(
+                color: Colors.white,
+              ),
             ),
           ),
           Positioned(
             top: 5,
             right: 5,
-            child:  IconButton(
-              icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
-              onPressed: (){
-                var future = isFav
-                    ? widget.pref.removeTv(widget.id)
-                    : widget.pref.addTv(tv);
-                future.whenComplete((){
-                  setState(() {});
-                });
-              },
+            child: SafeArea(
+              child:  IconButton(
+                icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
+                onPressed: (){
+                  var future = isFav
+                      ? widget.pref.removeTv(widget.id)
+                      : widget.pref.addTv(tv);
+                  future.whenComplete((){
+                    setState(() {});
+                  });
+                },
+              ),
             ),
           ),
         ],
@@ -158,14 +188,6 @@ class _TvPageState extends State<TvDetailPage>{
   }
 
   Widget _buildDetails(TvDetails detail){
-    var genreBuffer = StringBuffer();
-    detail.genres.forEach((genre){
-      if (genreBuffer.isNotEmpty) {
-        genreBuffer.write(', ');
-      }
-      genreBuffer.write(genre.name);
-    });
-
     var listChild = List<Widget>();
     listChild.add(_headerImage(detail));
 
@@ -181,19 +203,31 @@ class _TvPageState extends State<TvDetailPage>{
     var timeSpanBuffer = StringBuffer();
     timeSpanBuffer.write(Details.parseDate(detail.firstAirDate)?.year?.toString() ?? '');
     if (detail.inProduction == true) {
-      timeSpanBuffer.write(' -  ');
+      timeSpanBuffer.write(' - present');
     } else {
+      timeSpanBuffer.write(' - ');
       timeSpanBuffer.write(Details.parseDate(detail.lastAirDate)?.year?.toString() ?? '');
     }
-    timeSpanBuffer.write('      ${detail.noSeasons ?? 0} season(s)' );
-    var releaseWidget = Text(timeSpanBuffer.toString(),
-        style: TextStyle(
-          fontSize: 16.0,
-          color: Colors.grey,
+    var releaseWidget = Row(
+      children: <Widget>[
+        Text(timeSpanBuffer.toString(),
+            style: TextStyle(
+              fontSize: 16.0,
+              fontStyle: FontStyle.italic,
+              color: Colors.grey,
+            )
+        ),
+        SizedBox(width: 15,),
+        Text('${detail.noSeasons ?? 0} season(s)',
+            style: TextStyle(
+              fontSize: 16.0,
+              color: Colors.grey,
+            )
         )
+      ],
     );
 
-    var genreWidget = Text(genreBuffer.toString(),
+    var genreWidget = Text(detail.genres.map((genre) => genre.name).join(', '),
         style: TextStyle(
           fontSize: 16.0,
           color: Colors.grey,
@@ -259,7 +293,7 @@ class _TvPageState extends State<TvDetailPage>{
       ),
     ));
 
-    if (_casts?.isNotEmpty == true) {
+    if (_credit?.cast?.isNotEmpty == true) {
 
       listChild.add(Padding(
         padding: EdgeInsets.only(left: 16, right: 16, top: 16),
@@ -274,17 +308,128 @@ class _TvPageState extends State<TvDetailPage>{
       listChild.add(Container(
         height: 250,
         child: ListView.builder(
-            itemCount: _casts.length,
+            itemCount: _credit.cast.length,
             scrollDirection: Axis.horizontal,
             itemBuilder: (context, index){
-              var person = _casts[index];
+              var person = _credit.cast[index];
               return _castBox(context, person);
             }
         ),
       ));
     }
 
+    if (_credit?.crew?.isNotEmpty == true) {
+      listChild.add(Padding(
+          padding: EdgeInsets.only(left: 16, right: 16, top: 10),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Text('Crew',
+                    style: TextStyle(
+                      fontSize: 20.0,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    )),
+              ),
+              InkWell(
+                child: Text('see all',
+                    style: TextStyle(
+                      fontSize: 14.0,
+                      color: Colors.blueGrey,
+                    )),
+                onTap: (){
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_){
+                        return CrewPage(crews: _credit.crew, name: (detail.name ?? detail.originalName));
+                      }
+                  ));
+                },
+              )
+            ],
+          )
+      ));
+
+      var directors = _credit.crew.where((person) => person.job?.trim()?.toLowerCase() == 'director').toList();
+      if (directors.isNotEmpty) {
+        listChild.add(Padding(
+          padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+          child: Text('Director: ${directors.map((person) => person.name).join(', ')}',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: Colors.grey,
+              )),
+        ));
+      }
+    }
+
+    listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
+
+    listChild.add(InkWell(
+      child: Row(
+        children: <Widget>[
+          SizedBox(width: 16,),
+          Image.asset(BTN_GOOGLE, width: 30, height: 30,),
+          SizedBox(width: 5,),
+          Text('Search in Web',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: Colors.white,
+              )),
+        ],
+      ),
+      onTap: (){
+        searchInGoogle((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
+      },
+    ));
+
+    listChild.add(SizedBox(height: 15,));
+
+    listChild.add(InkWell(
+      child: Row(
+        children: <Widget>[
+          SizedBox(width: 16,),
+          Image.asset(BTN_YOUTUBE, width: 30, height: 30,),
+          SizedBox(width: 5,),
+          Text('Search in YouTube',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: Colors.white,
+              )),
+        ],
+      ),
+      onTap: (){
+        searchInYoutube((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
+      },
+    ));
+
+    listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
+
+    if (_similar?.isNotEmpty == true) {
+      listChild.add(Padding(
+        padding: EdgeInsets.only(left: 16, right: 16, top: 16),
+        child: Text('Similar Items',
+            style: TextStyle(
+              fontSize: 20.0,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            )),
+      ));
+      listChild.add(Container(
+        height: 230,
+        child: ListView.builder(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _similar.length,
+            scrollDirection: Axis.horizontal,
+            itemBuilder: (context, index){
+              var show = _similar[index];
+              return _similarBox(context, show);
+            }
+        ),
+      ));
+    }
+
     return ListView(
+      padding: EdgeInsets.only(bottom: 10),
       children: listChild,
     );
   }
@@ -300,7 +445,7 @@ class _TvPageState extends State<TvDetailPage>{
           CachedNetworkImage(imageUrl: MID_IMAGE_PREFIX + (cast.profilePath ?? ''),
               fit: BoxFit.cover,
               placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
-              height: 160, width: 110),
+              height: 165, width: 110),
           Padding(
             padding: EdgeInsets.only(left: 5, right: 5, top: 5),
             child: Text(cast.name, style: TextStyle(color: Colors.white, fontSize: 12),),
@@ -308,12 +453,44 @@ class _TvPageState extends State<TvDetailPage>{
           Spacer(),
           Padding(
             padding: EdgeInsets.only(left: 5, right: 5, bottom: 5),
-            child: Text(cast.character, style: TextStyle(color: Colors.grey, fontSize: 11),),
+            child: Text(cast.character, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey, fontSize: 11),),
           )
         ],
       ),
     );
   }
+
+
+  _similarBox(BuildContext context, Show show) {
+    return InkWell(
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+        color: Color.fromARGB(255, 40, 40, 40),
+        width: 110, height: 210,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            CachedNetworkImage(imageUrl: MID_IMAGE_PREFIX + (show.poster ?? ''),
+                fit: BoxFit.cover,
+                placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
+                height: 165, width: 110),
+            Padding(
+              padding: EdgeInsets.only(left: 5, right: 5, top: 5),
+              child: Text((show.name ?? show.originalTitle), style: TextStyle(color: Colors.white, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis,),
+            ),
+          ],
+        ),
+      ),
+      onTap: (){
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_){
+              return TvDetailPage(id: show.id, pref: widget.pref,);
+            }
+        ));
+      },
+    );
+  }
+
 
   _showRetrySnackbar(BuildContext context){
     final snackBar = SnackBar(content: Text('Fail to load :('),

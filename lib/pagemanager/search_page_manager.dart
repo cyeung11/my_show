@@ -157,8 +157,7 @@ class SearchPageManager{
         context: context,
         tiles: _shows.map((Show currentMovie){
           return _movieEntry(context, currentMovie);
-        }
-        )
+        })
     ).toList();
 
     if (_isLoading) {
@@ -226,7 +225,6 @@ class SearchPageManager{
                   ],
                 )
             ),
-            SizedBox(width: 5,),
           ],
         ),
       ),

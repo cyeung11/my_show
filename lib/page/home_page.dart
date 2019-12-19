@@ -35,7 +35,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerP
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(statusBarColor: Colors.transparent));
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarBrightness: Brightness.dark),);
 
     VoidCallback voidCallback = (){
       setState(() {

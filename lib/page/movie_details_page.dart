@@ -3,8 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:my_show/model/cast.dart';
 import 'package:my_show/model/details.dart';
 import 'package:my_show/model/movie_details.dart';
+import 'package:my_show/model/show.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
+import 'package:my_show/network/response/credit_response.dart';
+import 'package:my_show/page/crew_page.dart';
+import 'package:my_show/pagemanager/trending_page_manager.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import '../asset_path.dart';
@@ -25,15 +29,23 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
 
   Future<MovieDetails> _details;
 
-  List<Cast> _casts;
+  CreditResponse _credit;
+  List<Show> _similar;
 
   @override
   void initState() {
     super.initState();
     getCredit(false, widget.id).then((response){
-      if (response?.cast?.isNotEmpty == true) {
+      if (response != null) {
         setState(() {
-          _casts = response.cast;
+          _credit = response;
+        });
+      }
+    });
+    getShows(GET_MOVIE_DETAIL + widget.id.toString() + SIMILAR, null, null).then((response){
+      if (response?.result != null) {
+        setState(() {
+          _similar = response.result;
         });
       }
     });
@@ -44,53 +56,55 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
     if (_details == null) {
       _loadData(context);
     }
-    return SafeArea(
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body:
-        FutureBuilder<MovieDetails>(
-          future: _details,
-          builder: (context, snapshot){
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Container(
-                constraints: BoxConstraints.expand(),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: <Widget>[
-                    Positioned(
-                      top: 5, left: 5,
-                      child: BackButton(color: Colors.white,),
-                    ),
-                    CircularProgressIndicator()
-                  ],
-                ),
-              );
-            } else if (snapshot.data == null) {
-              return Container(
-                constraints: BoxConstraints.expand(),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: <Widget>[
-                    Positioned(
-                      top: 5, left: 5,
-                      child: BackButton(color: Colors.white,),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.refresh, color: Colors.white, size: 50,),
-                      onPressed: (){
-                        setState(() {
-                          _loadData(context);
-                        });
-                      },
-                    )
-                  ],
-                ),
-              );
-            } else {
-              return _buildDetails(snapshot.data);
-            }
-          },
-        ),
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body:
+      FutureBuilder<MovieDetails>(
+        future: _details,
+        builder: (context, snapshot){
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return SafeArea(
+               child: Container(
+              constraints: BoxConstraints.expand(),
+              child: Stack(
+                alignment: Alignment.center,
+                children: <Widget>[
+                  Positioned(
+                    top: 5, left: 5,
+                    child: BackButton(color: Colors.white,),
+                  ),
+                  CircularProgressIndicator()
+                ],
+              ),
+              ),
+            );
+          } else if (snapshot.data == null) {
+            return SafeArea(
+                child: Container(
+              constraints: BoxConstraints.expand(),
+              child: Stack(
+                alignment: Alignment.center,
+                children: <Widget>[
+                  Positioned(
+                    top: 5, left: 5,
+                    child: BackButton(color: Colors.white,),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.refresh, color: Colors.white, size: 50,),
+                    onPressed: (){
+                      setState(() {
+                        _loadData(context);
+                      });
+                    },
+                  )
+                ],
+              ),
+              ),
+            );
+          } else {
+            return _buildDetails(snapshot.data);
+          }
+        },
       ),
     );
   }
@@ -110,7 +124,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
       child: Stack(
         alignment: Alignment.topCenter,
         children: <Widget>[
-          Positioned(
+          Container(
             width: screenWidth,
             height: backdropHeight,
             child: CachedNetworkImage(
@@ -118,6 +132,18 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
                 fit: BoxFit.scaleDown,
                 placeholder: (context, _) => Image.asset(BACKDROP_PLACEHOLDER),
                 height: backdropHeight, width: screenWidth
+            ),
+          ),
+          Container(
+            width: screenWidth,
+            height: backdropHeight,
+            decoration: BoxDecoration(
+                gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0, 0.4],
+                    colors: [Colors.black54, Colors.transparent]
+                )
             ),
           ),
           Positioned(
@@ -133,13 +159,16 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
           Positioned(
             top: 5,
             left: 5,
+            child: SafeArea(
             child: BackButton(
               color: Colors.white,
+            ),
             ),
           ),
           Positioned(
             top: 5,
             right: 5,
+            child: SafeArea(
             child:  IconButton(
               icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
               onPressed: (){
@@ -152,6 +181,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
               },
             ),
           ),
+          ),
         ],
       ),
     );
@@ -159,14 +189,6 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
   }
 
   Widget _buildDetails(MovieDetails detail){
-    var genreBuffer = StringBuffer();
-    detail.genres.forEach((genre){
-      if (genreBuffer.isNotEmpty) {
-        genreBuffer.write(', ');
-      }
-      genreBuffer.write(genre.name);
-    });
-
     var titleBuffer = StringBuffer();
     titleBuffer.write((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
     var release = Details.parseDate(detail.release);
@@ -186,7 +208,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
       ),
     );
 
-    var genreWidget = Text(genreBuffer.toString(),
+    var genreWidget = Text(detail.genres.map((genre) => genre.name).join(', '),
         style: TextStyle(
           fontSize: 16.0,
           color: Colors.grey,
@@ -248,32 +270,143 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
       ),
     ));
 
-    if (_casts?.isNotEmpty == true) {
+    if (_credit?.cast?.isNotEmpty == true) {
 
       listChild.add(Padding(
-            padding: EdgeInsets.only(left: 16, right: 16, top: 16),
-            child: Text('Cast',
-                style: TextStyle(
-                  fontSize: 20.0,
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                )),
-          )
-      );
+        padding: EdgeInsets.only(left: 16, right: 16, top: 16),
+        child: Text('Cast',
+            style: TextStyle(
+              fontSize: 20.0,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            )),
+      ));
       listChild.add(Container(
         height: 250,
         child: ListView.builder(
-            itemCount: _casts.length,
+          padding: EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _credit.cast.length,
             scrollDirection: Axis.horizontal,
             itemBuilder: (context, index){
-              var person = _casts[index];
+              var person = _credit.cast[index];
               return _castBox(context, person);
             }
         ),
       ));
     }
 
+    if (_credit?.crew?.isNotEmpty == true) {
+      listChild.add(Padding(
+        padding: EdgeInsets.only(left: 16, right: 16, top: 10),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: Text('Crew',
+                  style: TextStyle(
+                    fontSize: 20.0,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  )),
+            ),
+            InkWell(
+              child: Text('see all',
+                  style: TextStyle(
+                    fontSize: 14.0,
+                    color: Colors.blueGrey,
+                  )),
+              onTap: (){
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_){
+                    return CrewPage(crews: _credit.crew, name: (detail.name ?? detail.originalName));
+                  }
+                ));
+              },
+            )
+          ],
+        )
+      ));
+
+      var directors = _credit.crew.where((person) => person.job?.trim()?.toLowerCase() == 'director').toList();
+      if (directors.isNotEmpty) {
+        listChild.add(Padding(
+          padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+          child: Text('Director: ${directors.map((person) => person.name).join(', ')}',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: Colors.grey,
+              )),
+        ));
+      }
+    }
+
+    listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
+
+    listChild.add(InkWell(
+      child: Row(
+        children: <Widget>[
+          SizedBox(width: 16,),
+          Image.asset(BTN_GOOGLE, width: 30, height: 30,),
+          SizedBox(width: 5,),
+          Text('Search in Web',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: Colors.white,
+              )),
+        ],
+      ),
+      onTap: (){
+        searchInGoogle((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
+      },
+    ));
+
+    listChild.add(SizedBox(height: 15,));
+
+    listChild.add(InkWell(
+      child: Row(
+        children: <Widget>[
+          SizedBox(width: 16,),
+          Image.asset(BTN_YOUTUBE, width: 30, height: 30,),
+          SizedBox(width: 5,),
+          Text('Search in YouTube',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: Colors.white,
+              )),
+        ],
+      ),
+      onTap: (){
+        searchInYoutube((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
+      },
+    ));
+
+    listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
+
+    if (_similar?.isNotEmpty == true) {
+      listChild.add(Padding(
+        padding: EdgeInsets.only(left: 16, right: 16, top: 16),
+        child: Text('Similar Items',
+            style: TextStyle(
+              fontSize: 20.0,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            )),
+      ));
+      listChild.add(Container(
+        height: 230,
+        child: ListView.builder(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _similar.length,
+            scrollDirection: Axis.horizontal,
+            itemBuilder: (context, index){
+              var show = _similar[index];
+              return _similarBox(context, show);
+            }
+        ),
+      ));
+    }
+
     return ListView(
+      padding: EdgeInsets.only(bottom: 10),
       children: listChild,
     );
   }
@@ -289,7 +422,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
           CachedNetworkImage(imageUrl: MID_IMAGE_PREFIX + (cast.profilePath ?? ''),
               fit: BoxFit.cover,
               placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
-              height: 160, width: 110),
+              height: 165, width: 110),
           Padding(
             padding: EdgeInsets.only(left: 5, right: 5, top: 5),
             child: Text(cast.name, style: TextStyle(color: Colors.white, fontSize: 12),),
@@ -301,6 +434,36 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
           )
         ],
       ),
+    );
+  }
+
+  _similarBox(BuildContext context, Show show) {
+    return InkWell(
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+        color: Color.fromARGB(255, 40, 40, 40),
+        width: 110, height: 210,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            CachedNetworkImage(imageUrl: MID_IMAGE_PREFIX + (show.poster ?? ''),
+                fit: BoxFit.cover,
+                placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
+                height: 165, width: 110),
+            Padding(
+              padding: EdgeInsets.only(left: 5, right: 5, top: 5),
+              child: Text((show.title ?? show.originalTitle), style: TextStyle(color: Colors.white, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis,),
+            ),
+          ],
+        ),
+      ),
+      onTap: (){
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_){
+              return MovieDetailPage(id: show.id, pref: widget.pref,);
+            }
+        ));
+      },
     );
   }
 

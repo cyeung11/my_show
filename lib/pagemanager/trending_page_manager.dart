@@ -404,22 +404,22 @@ class TrendingPageManager{
       }
     }
   }
+}
 
-  searchInYoutube(String query) async {
-    query = query.replaceAll(" ", "+");
-    if (Platform.isIOS &&
-        await canLaunch(SEARCH_YOUTUBE_IOS_APP_PREFIX + query)) {
-      await launch(SEARCH_YOUTUBE_IOS_APP_PREFIX + query);
-    } else if (await canLaunch(SEARCH_YOUTUBE_WEB_PREFIX + query)) {
-      await launch(SEARCH_YOUTUBE_WEB_PREFIX + query);
-    }
+searchInYoutube(String query) async {
+  query = query.replaceAll(" ", "+");
+  if (Platform.isIOS &&
+      await canLaunch(SEARCH_YOUTUBE_IOS_APP_PREFIX + query)) {
+    await launch(SEARCH_YOUTUBE_IOS_APP_PREFIX + query);
+  } else if (await canLaunch(SEARCH_YOUTUBE_WEB_PREFIX + query)) {
+    await launch(SEARCH_YOUTUBE_WEB_PREFIX + query);
   }
+}
 
-  searchInGoogle(String query) async {
-    query = query.replaceAll(" ", "+");
-    if (await canLaunch(SEARCH_GOOGLE_PREFIX + query)) {
-      await launch(SEARCH_GOOGLE_PREFIX + query);
-    }
+searchInGoogle(String query) async {
+  query = query.replaceAll(" ", "+");
+  if (await canLaunch(SEARCH_GOOGLE_PREFIX + query)) {
+    await launch(SEARCH_GOOGLE_PREFIX + query);
   }
 }
 
