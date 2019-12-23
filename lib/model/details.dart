@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:intl/intl.dart';
 import 'package:my_show/model/role.dart';
+import 'package:my_show/network/api_constant.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'genre.dart';
 
@@ -70,6 +74,30 @@ abstract class Details {
     } catch (e) {
       print(e);
       return null;
+    }
+  }
+
+
+  static searchInYoutube(String query) async {
+    query = query.replaceAll(" ", "+");
+    if (Platform.isIOS &&
+        await canLaunch(SEARCH_YOUTUBE_IOS_APP_PREFIX + query)) {
+      await launch(SEARCH_YOUTUBE_IOS_APP_PREFIX + query);
+    } else if (await canLaunch(SEARCH_YOUTUBE_WEB_PREFIX + query)) {
+      await launch(SEARCH_YOUTUBE_WEB_PREFIX + query);
+    }
+  }
+
+  static searchInGoogle(String query) async {
+    query = query.replaceAll(" ", "+");
+    if (await canLaunch(SEARCH_GOOGLE_PREFIX + query)) {
+      await launch(SEARCH_GOOGLE_PREFIX + query);
+    }
+  }
+
+  static viewInImdb(String imdbId) async {
+    if (await canLaunch(IMDB_URL + imdbId)) {
+      await launch(IMDB_URL + imdbId);
     }
   }
 }

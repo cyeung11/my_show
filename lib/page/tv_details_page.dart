@@ -7,7 +7,6 @@ import 'package:my_show/model/tv_details.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/credit_response.dart';
-import 'package:my_show/pagemanager/trending_page_manager.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import '../asset_path.dart';
@@ -128,7 +127,7 @@ class _TvPageState extends State<TvDetailPage>{
             width: screenWidth,
             height: backdropHeight,
             child: CachedNetworkImage(
-                imageUrl: IMAGE_PREFIX + (tv.backdropPath ?? ''),
+                imageUrl: BACKDROP_IMAGE_PREFIX_HD + (tv.backdropPath ?? ''),
                 fit: BoxFit.scaleDown,
                 placeholder: (context, _) => Image.asset(BACKDROP_PLACEHOLDER),
                 height: backdropHeight, width: screenWidth
@@ -250,7 +249,7 @@ class _TvPageState extends State<TvDetailPage>{
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[titleWidget, releaseWidget, genreWidget,],
+                children: <Widget>[titleWidget, SizedBox(height: 5,), releaseWidget, SizedBox(height: 5,), genreWidget,],
               ),
             ),
             SizedBox(width: 5,),
@@ -274,11 +273,11 @@ class _TvPageState extends State<TvDetailPage>{
         child: titleWidget,
       ));
       listChild.add(Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.only(left: 16, right: 16, top: 5),
         child: releaseWidget,
       ));
       listChild.add(Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16),
+        padding: EdgeInsets.only(left: 16, right: 16, top: 5),
         child: genreWidget,
       ));
     }
@@ -362,6 +361,87 @@ class _TvPageState extends State<TvDetailPage>{
       }
     }
 
+    if (detail.noEpisodes != null || detail.episodeRunTime?.isNotEmpty == true) {
+      listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
+
+      listChild.add(Padding(
+        padding: EdgeInsets.only(left: 16, right: 16),
+        child: Text('Episodes',
+            style: TextStyle(
+              fontSize: 20.0,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            )),
+      ));
+
+      if (detail.noEpisodes != null) {
+        listChild.add(Padding(
+                padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+                child: Text('Total Episode: ${detail.noEpisodes}',
+                    style: TextStyle(
+                      fontSize: 16.0,
+                      color: Colors.grey,
+                    )),
+              ));
+      }
+
+      if (detail.episodeRunTime?.isNotEmpty == true) {
+        listChild.add(Padding(
+                padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+                child: Text('Episode Runtime: ${detail.episodeRunTime.first}',
+                    style: TextStyle(
+                      fontSize: 16.0,
+                      color: Colors.grey,
+                    )),
+              ));
+      }
+    }
+
+    if (detail.seasons?.isNotEmpty == true) {
+      listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
+
+      listChild.add(Padding(
+        padding: EdgeInsets.only(left: 16, right: 16),
+        child: Text('Seasons',
+            style: TextStyle(
+              fontSize: 20.0,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            )),
+      ));
+
+      detail.seasons.forEach((s){
+        if (s.seasonNo != 0) {
+          listChild.add(Padding(
+            padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+            child: Text(s.name,
+                style: TextStyle(
+                  fontSize: 16.0,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey,
+                )),
+          ));
+
+          listChild.add(Padding(
+            padding: EdgeInsets.only(left: 30, right: 30, top: 10),
+            child: Text('First Air: ${s.airDate}',
+                style: TextStyle(
+                  fontSize: 16.0,
+                  color: Colors.grey,
+                )),
+          ));
+          listChild.add(Padding(
+            padding: EdgeInsets.only(left: 30, right: 30, top: 10),
+            child: Text('No. of Episode: ${s.episodeCount}',
+                style: TextStyle(
+                  fontSize: 16.0,
+                  color: Colors.grey,
+                )),
+          ));
+        }
+      });
+    }
+
     listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
 
     listChild.add(InkWell(
@@ -369,7 +449,7 @@ class _TvPageState extends State<TvDetailPage>{
         children: <Widget>[
           SizedBox(width: 16,),
           Image.asset(BTN_GOOGLE, width: 30, height: 30,),
-          SizedBox(width: 5,),
+          SizedBox(width: 10,),
           Text('Search in Web',
               style: TextStyle(
                 fontSize: 16.0,
@@ -378,7 +458,7 @@ class _TvPageState extends State<TvDetailPage>{
         ],
       ),
       onTap: (){
-        searchInGoogle((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
+        Details.searchInGoogle((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
       },
     ));
 
@@ -389,7 +469,7 @@ class _TvPageState extends State<TvDetailPage>{
         children: <Widget>[
           SizedBox(width: 16,),
           Image.asset(BTN_YOUTUBE, width: 30, height: 30,),
-          SizedBox(width: 5,),
+          SizedBox(width: 10,),
           Text('Search in YouTube',
               style: TextStyle(
                 fontSize: 16.0,
@@ -398,7 +478,7 @@ class _TvPageState extends State<TvDetailPage>{
         ],
       ),
       onTap: (){
-        searchInYoutube((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
+        Details.searchInYoutube((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
       },
     ));
 
@@ -442,7 +522,7 @@ class _TvPageState extends State<TvDetailPage>{
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          CachedNetworkImage(imageUrl: MID_IMAGE_PREFIX + (cast.profilePath ?? ''),
+          CachedNetworkImage(imageUrl: PROFILE_IMAGE_PREFIX + (cast.profilePath ?? ''),
               fit: BoxFit.cover,
               placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
               height: 165, width: 110),
@@ -470,7 +550,7 @@ class _TvPageState extends State<TvDetailPage>{
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            CachedNetworkImage(imageUrl: MID_IMAGE_PREFIX + (show.poster ?? ''),
+            CachedNetworkImage(imageUrl: LOW_IMAGE_PREFIX + (show.poster ?? ''),
                 fit: BoxFit.cover,
                 placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
                 height: 165, width: 110),

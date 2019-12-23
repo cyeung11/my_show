@@ -44,6 +44,7 @@ class SortType implements Selectable{
   static List<SortType> allMovie(){
     return [SortType.popularityDesc(), SortType.popularityAsc(), SortType.voteDesc(), SortType.voteAsc(), SortType.releaseDesc(), SortType.releaseAsc()];
   }
+
   static List<SortType> allTv(){
     return [SortType.popularityDesc(), SortType.popularityAsc(), SortType.voteDesc(), SortType.voteAsc(), SortType.firstAirDesc(), SortType.firstAirAsc()];
   }

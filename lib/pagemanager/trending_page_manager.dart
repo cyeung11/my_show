@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swiper/flutter_swiper.dart';
+import 'package:my_show/model/details.dart';
 import 'package:my_show/model/show.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
@@ -12,7 +12,6 @@ import 'package:my_show/network/response/movie_list_response.dart';
 import 'package:my_show/page/movie_details_page.dart';
 import 'package:my_show/page/tv_details_page.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../asset_path.dart';
 import '../show_storage_helper.dart';
@@ -120,7 +119,7 @@ class TrendingPageManager{
               decoration: BoxDecoration(
                 color: Colors.black,
                 image: DecorationImage(
-                  image: CachedNetworkImageProvider(IMAGE_PREFIX + (currentMovie.backdrop ?? '')),
+                  image: CachedNetworkImageProvider(BACKDROP_IMAGE_PREFIX + (currentMovie.backdrop ?? '')),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -155,7 +154,7 @@ class TrendingPageManager{
                                   icon: Image.asset(BTN_YOUTUBE),
                                   padding: EdgeInsets.all(5),
                                   onPressed: () {
-                                    searchInYoutube(currentMovie.title ?? currentMovie.name);
+                                    Details.searchInYoutube(currentMovie.title ?? currentMovie.name);
                                   },),
                               ),
                               Padding(
@@ -167,7 +166,7 @@ class TrendingPageManager{
                                     icon: Image.asset(BTN_GOOGLE),
                                     padding: EdgeInsets.all(5),
                                     onPressed: () {
-                                      searchInGoogle(currentMovie.title ?? currentMovie.name);
+                                      Details.searchInGoogle(currentMovie.title ?? currentMovie.name);
                                     },),
                                 ),
                               ),
@@ -403,23 +402,6 @@ class TrendingPageManager{
         return GET_TV_POPULAR;
       }
     }
-  }
-}
-
-searchInYoutube(String query) async {
-  query = query.replaceAll(" ", "+");
-  if (Platform.isIOS &&
-      await canLaunch(SEARCH_YOUTUBE_IOS_APP_PREFIX + query)) {
-    await launch(SEARCH_YOUTUBE_IOS_APP_PREFIX + query);
-  } else if (await canLaunch(SEARCH_YOUTUBE_WEB_PREFIX + query)) {
-    await launch(SEARCH_YOUTUBE_WEB_PREFIX + query);
-  }
-}
-
-searchInGoogle(String query) async {
-  query = query.replaceAll(" ", "+");
-  if (await canLaunch(SEARCH_GOOGLE_PREFIX + query)) {
-    await launch(SEARCH_GOOGLE_PREFIX + query);
   }
 }
 

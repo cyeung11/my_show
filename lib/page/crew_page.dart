@@ -90,7 +90,7 @@ class CrewPage extends StatelessWidget{
   Widget _profilePic(String path){
     if (path?.isNotEmpty == true) {
       return CachedNetworkImage(
-          imageUrl: (MID_IMAGE_PREFIX + path),
+          imageUrl: (PROFILE_IMAGE_PREFIX_HD + path),
           fit: BoxFit.contain,
           height: 150, width: 100,
           placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER)

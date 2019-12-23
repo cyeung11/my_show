@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:my_show/model/cast.dart';
 import 'package:my_show/model/details.dart';
 import 'package:my_show/model/movie_details.dart';
@@ -8,7 +9,6 @@ import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/credit_response.dart';
 import 'package:my_show/page/crew_page.dart';
-import 'package:my_show/pagemanager/trending_page_manager.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import '../asset_path.dart';
@@ -128,7 +128,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
             width: screenWidth,
             height: backdropHeight,
             child: CachedNetworkImage(
-                imageUrl: IMAGE_PREFIX + (detail.backdropPath ?? ''),
+                imageUrl: BACKDROP_IMAGE_PREFIX_HD + (detail.backdropPath ?? ''),
                 fit: BoxFit.scaleDown,
                 placeholder: (context, _) => Image.asset(BACKDROP_PLACEHOLDER),
                 height: backdropHeight, width: screenWidth
@@ -231,7 +231,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[titleWidget, genreWidget,],
+                children: <Widget>[titleWidget, SizedBox(height: 5,), genreWidget,],
               ),
             ),
             SizedBox(width: 5,),
@@ -260,6 +260,18 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
       ));
     }
 
+    if ((detail.runtime ?? 0) != 0) {
+      listChild.add(Padding(
+        padding: EdgeInsets.only(left: 16, right: 16, top: 5),
+        child: Text("${detail.runtime} min",
+            style: TextStyle(
+              fontSize: 16.0,
+              color: Colors.grey,
+            )
+        ),
+      ));
+    }
+
     listChild.add(Padding(
       padding: EdgeInsets.only(left: 16, right: 16, top: 16),
       child: Text(detail.overview ?? "",
@@ -269,6 +281,31 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
           )
       ),
     ));
+
+    if (detail.release != null) {
+      listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
+
+      listChild.add(Padding(
+        padding: EdgeInsets.only(left: 16, right: 16),
+        child: Text('Release',
+            style: TextStyle(
+              fontSize: 20.0,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            )),
+      ));
+
+      listChild.add(Padding(
+        padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+        child: Text(detail.release,
+            style: TextStyle(
+              fontSize: 16.0,
+              color: Colors.grey,
+            )),
+      ));
+
+      listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
+    }
 
     if (_credit?.cast?.isNotEmpty == true) {
 
@@ -339,6 +376,47 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
       }
     }
 
+
+    if ((detail.budget ?? 0) != 0 || (detail.revenue ?? 0) != 0) {
+      listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
+
+      var numFormat = NumberFormat("#,##0", "en_US");
+
+      listChild.add(Padding(
+        padding: EdgeInsets.only(left: 16, right: 16),
+        child: Text('Box Office',
+            style: TextStyle(
+              fontSize: 20.0,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            )),
+      ));
+
+      if ((detail.budget ?? 0) != 0) {
+        listChild.add(Padding(
+                padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+                child: Text('Budget: \$${numFormat.format(detail.budget)}',
+                    style: TextStyle(
+                      fontSize: 16.0,
+                      color: Colors.grey,
+                    )),
+              ));
+      }
+
+      if ((detail.revenue ?? 0) != 0) {
+        listChild.add(Padding(
+                padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+                child: Text('Revenue: \$${numFormat.format(detail.revenue)}',
+                    style: TextStyle(
+                      fontSize: 16.0,
+                      color: Colors.grey,
+                    )),
+              ));
+      }
+
+    }
+
+
     listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
 
     listChild.add(InkWell(
@@ -346,7 +424,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
         children: <Widget>[
           SizedBox(width: 16,),
           Image.asset(BTN_GOOGLE, width: 30, height: 30,),
-          SizedBox(width: 5,),
+          SizedBox(width: 10,),
           Text('Search in Web',
               style: TextStyle(
                 fontSize: 16.0,
@@ -355,7 +433,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
         ],
       ),
       onTap: (){
-        searchInGoogle((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
+        Details.searchInGoogle((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
       },
     ));
 
@@ -366,7 +444,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
         children: <Widget>[
           SizedBox(width: 16,),
           Image.asset(BTN_YOUTUBE, width: 30, height: 30,),
-          SizedBox(width: 5,),
+          SizedBox(width: 10,),
           Text('Search in YouTube',
               style: TextStyle(
                 fontSize: 16.0,
@@ -375,9 +453,30 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
         ],
       ),
       onTap: (){
-        searchInYoutube((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
+        Details.searchInYoutube((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
       },
     ));
+
+    if (detail.imdbId?.isNotEmpty == true) {
+      listChild.add(SizedBox(height: 15,));
+      listChild.add(InkWell(
+        child: Row(
+          children: <Widget>[
+            SizedBox(width: 16,),
+            Image.asset(BTN_IMDB, width: 30, height: 30,),
+            SizedBox(width: 10,),
+            Text('View in IMDb',
+                style: TextStyle(
+                  fontSize: 16.0,
+                  color: Colors.white,
+                )),
+          ],
+        ),
+        onTap: (){
+          Details.viewInImdb(detail.imdbId);
+        },
+      ));
+    }
 
     listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
 
@@ -419,7 +518,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          CachedNetworkImage(imageUrl: MID_IMAGE_PREFIX + (cast.profilePath ?? ''),
+          CachedNetworkImage(imageUrl: PROFILE_IMAGE_PREFIX + (cast.profilePath ?? ''),
               fit: BoxFit.cover,
               placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
               height: 165, width: 110),
@@ -446,7 +545,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            CachedNetworkImage(imageUrl: MID_IMAGE_PREFIX + (show.poster ?? ''),
+            CachedNetworkImage(imageUrl: LOW_IMAGE_PREFIX + (show.poster ?? ''),
                 fit: BoxFit.cover,
                 placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
                 height: 165, width: 110),
