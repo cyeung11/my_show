@@ -312,7 +312,7 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
                 padding: EdgeInsets.all(10),
                 onPressed: () => _onMenuSelect(widget._pageManager.isTv ? TrendingType.TvPopular : TrendingType.MoviePopular),
                 icon: Icon(Icons.star, size: 20, color: (widget._pageManager.currentType == TrendingType.TvPopular || widget._pageManager.currentType == TrendingType.MoviePopular) ? Colors.orangeAccent : Colors.white),
-                label: Text("Popular",
+                label: Text('Popular',
                   style: TextStyle(color: (widget._pageManager.currentType == TrendingType.TvPopular || widget._pageManager.currentType == TrendingType.MoviePopular) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
                 ),
               ),
@@ -321,10 +321,10 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
               position: _animator.animation2,
               child: FlatButton.icon(
                 padding: EdgeInsets.all(10),
-                onPressed: () => _onMenuSelect(widget._pageManager.isTv ? TrendingType.TvLatest : TrendingType.MovieLatest),
-                icon: Icon(Icons.new_releases, size: 20, color: (widget._pageManager.currentType == TrendingType.TvLatest || widget._pageManager.currentType == TrendingType.MovieLatest) ? Colors.orangeAccent : Colors.white),
-                label: Text("Latest",
-                  style: TextStyle(color: (widget._pageManager.currentType == TrendingType.TvLatest || widget._pageManager.currentType == TrendingType.MovieLatest) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
+                onPressed: () => _onMenuSelect(widget._pageManager.isTv ? TrendingType.TvToday : TrendingType.MoviePlaying),
+                icon: Icon(Icons.new_releases, size: 20, color: (widget._pageManager.currentType == TrendingType.TvToday || widget._pageManager.currentType == TrendingType.MoviePlaying) ? Colors.orangeAccent : Colors.white),
+                label: Text(widget._pageManager.isTv ? 'Airing' :'On Theatre',
+                  style: TextStyle(color: (widget._pageManager.currentType == TrendingType.TvToday || widget._pageManager.currentType == TrendingType.MoviePlaying) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
                 ),
               ),
             ),
@@ -390,8 +390,8 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
 
   String getNetworkPath(TrendingType type){
     switch (type){
-      case TrendingType.TvLatest: {
-        return GET_TV_LATEST;
+      case TrendingType.TvToday: {
+        return GET_TV_TODAY;
       }
       case TrendingType.TvTopRate: {
         return GET_TV_TOP_RATE;
@@ -399,8 +399,8 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
       case TrendingType.TvOnAir: {
         return GET_TV_ON_AIR;
       }
-      case TrendingType.MovieLatest: {
-        return GET_MOVIE_LATEST;
+      case TrendingType.MoviePlaying: {
+        return GET_MOVIE_PLAYING;
       }
       case TrendingType.MovieTopRate: {
         return GET_MOVIE_TOP_RATE;

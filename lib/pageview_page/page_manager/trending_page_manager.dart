@@ -16,7 +16,7 @@ class TrendingPageManager{
 }
 
 enum TrendingType{
-  TvLatest, TvPopular, TvTopRate, TvOnAir, MovieLatest, MoviePopular, MovieTopRate, MovieUpcoming
+  TvToday, TvPopular, TvTopRate, TvOnAir, MoviePlaying, MoviePopular, MovieTopRate, MovieUpcoming
 }
 
 class MenuAnimator{
