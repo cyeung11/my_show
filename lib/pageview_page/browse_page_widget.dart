@@ -1,7 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:my_show/dialog/select_dialog.dart';
 import 'package:my_show/model/genre.dart';
 import 'package:my_show/model/show.dart';
@@ -11,54 +9,44 @@ import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/movie_list_response.dart';
 import 'package:my_show/page/movie_details_page.dart';
 import 'package:my_show/page/tv_details_page.dart';
+import 'package:my_show/pageview_page/page_manager/browse_page_manager.dart';
 import 'package:numberpicker/numberpicker.dart';
 
 import '../asset_path.dart';
 import '../show_storage_helper.dart';
 
-class BrowsePageManager{
-
-  bool _isLoading = false;
-  int _currentPage = 1;
-
-  bool _isTv = true;
-
-  int _year;
-  double _vote;
-  Genre _genre;
-  SortType _sort = SortType.popularityDesc();
-
-  final VoidCallback _onUpdate;
+class BrowsePageWidget extends StatefulWidget{
 
   final ShowStorageHelper _pref;
-  final ScrollController _scrollController = ScrollController();
 
-  final List<Show> _shows = List<Show>();
-  int _totalPage;
+  final BrowsePageManager _pageManager;
 
-  BrowsePageManager(this._onUpdate, this._pref){
+  BrowsePageWidget( this._pref, this._pageManager, {Key key}): super(key: key);
+
+  @override
+  State createState()  => _BrowsePageState();
+}
+
+class _BrowsePageState extends State<BrowsePageWidget> {
+
+  ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    resetScrollController();
+  }
+
+  resetScrollController(){
+    _scrollController = ScrollController(initialScrollOffset: widget._pageManager.scrollOffsetToRestore);
     _scrollController.addListener(_scrollListener);
   }
 
-  _scrollListener() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-      if (_currentPage + 1 <= _totalPage) {
-        _currentPage++;
-        _isLoading = true;
-
-        _onUpdate();
-
-        discover(_isTv, _year, _vote, _genre, _sort, _currentPage).then((data){
-          onDataReturn(data);
-        });
-      }
-    }
-  }
-
-  Widget build(BuildContext context){
-    if (_shows.isEmpty && !_isLoading) {
-      _isLoading = true;
-      discover(_isTv, _year, _vote, _genre, _sort, _currentPage).then((data){
+  @override
+  Widget build(BuildContext context) {
+    if (widget._pageManager.shows.isEmpty && !widget._pageManager.isLoading) {
+      widget._pageManager.isLoading = true;
+      discover(widget._pageManager.isTv, widget._pageManager.year, widget._pageManager.vote, widget._pageManager.genre, widget._pageManager.sort, widget._pageManager.currentPage).then((data){
         onDataReturn(data);
       });
     }
@@ -70,7 +58,7 @@ class BrowsePageManager{
             child: Column(
               children: <Widget>[
                 _topRow(context),
-                buildResultList(context)
+                _buildResultList(context)
               ],
             )
         ),
@@ -78,9 +66,33 @@ class BrowsePageManager{
     );
   }
 
-  Widget buildResultList(BuildContext context){
-    if (_shows.isEmpty) {
-      if (_isLoading) {
+  @override
+  dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  _scrollListener() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      if (widget._pageManager.currentPage + 1 <= widget._pageManager.totalPage) {
+        setState(() {
+          widget._pageManager.currentPage++;
+          widget._pageManager.isLoading = true;
+
+          discover(widget._pageManager.isTv, widget._pageManager.year,
+              widget._pageManager.vote, widget._pageManager.genre,
+              widget._pageManager.sort, widget._pageManager.currentPage).then((
+              data) {
+            onDataReturn(data);
+          });
+        });
+      }
+    }
+  }
+
+  Widget _buildResultList(BuildContext context){
+    if (widget._pageManager.shows.isEmpty) {
+      if (widget._pageManager.isLoading) {
         return Padding(padding: EdgeInsets.only(top: 10), child: CircularProgressIndicator());
       } else {
         return Container();
@@ -90,13 +102,13 @@ class BrowsePageManager{
     var entries = ListTile.divideTiles(
         color: Colors.white30,
         context: context,
-        tiles: _shows.map((Show currentMovie){
+        tiles: widget._pageManager.shows.map((Show currentMovie){
           return _movieEntry(context, currentMovie);
         }
         )
     ).toList();
 
-    if (_isLoading) {
+    if (widget._pageManager.isLoading) {
       entries.add(SizedBox(
         height: 100,
         child: Center(
@@ -106,9 +118,17 @@ class BrowsePageManager{
     }
 
     return Expanded(
-      child: ListView(
-          controller: _scrollController,
-          children: entries
+      child: NotificationListener(
+        child: ListView(
+            controller: _scrollController,
+            children: entries
+        ),
+        onNotification: (notification){
+          if (notification is ScrollNotification) {
+            widget._pageManager.scrollOffsetToRestore = notification.metrics.pixels;
+          }
+          return false;
+        },
       ),
     );
   }
@@ -140,19 +160,19 @@ class BrowsePageManager{
         SizedBox(width: 5,),
         IconButton(
           padding: EdgeInsets.symmetric(horizontal: 4),
-          icon: Icon(!_isTv ? Icons.live_tv : Icons.movie, color: Colors.white,),
+          icon: Icon(!widget._pageManager.isTv ? Icons.live_tv : Icons.movie, color: Colors.white,),
           onPressed: (){
-            _currentPage = 1;
-            _shows.clear();
-            _isLoading = true;
-            _isTv = !_isTv;
-            _year = null;
-            _sort = SortType.popularityDesc();
-            _genre = null;
-            _vote = null;
-            _onUpdate();
+            setState(() {
+              widget._pageManager.resetLoad();
+              resetScrollController();
+              widget._pageManager.isTv = !widget._pageManager.isTv;
+              widget._pageManager.year = null;
+              widget._pageManager.sort = SortType.popularityDesc();
+              widget._pageManager.genre = null;
+              widget._pageManager.vote = null;
+            });
 
-            discover(_isTv, _year, _vote, _genre, _sort, _currentPage).then((data){
+            discover(widget._pageManager.isTv, widget._pageManager.year, widget._pageManager.vote, widget._pageManager.genre, widget._pageManager.sort, widget._pageManager.currentPage).then((data){
               onDataReturn(data);
             });
           },
@@ -180,26 +200,26 @@ class BrowsePageManager{
   Widget _filterYearBox(BuildContext context) {
     var text = InkWell(
       child: Center(child: Padding(
-        padding: EdgeInsets.only(left: 10, top: 7.5, bottom: 7.5, right: _year == null ? 10 : 2.5),
-        child: Text('Year: ${_year?.toString() ?? 'All'}'),
+        padding: EdgeInsets.only(left: 10, top: 7.5, bottom: 7.5, right: widget._pageManager.year == null ? 10 : 2.5),
+        child: Text(widget._pageManager.year != null ? 'Year: ${widget._pageManager.year?.toString()}+' : 'Year: All'),
       ),),
       onTap: (){
         showDialog<int>(context: context,builder: (context){
           return  NumberPickerDialog.integer(
             minValue: 1970,
             maxValue:  DateTime.now().year,
-            initialIntegerValue: _year ??  DateTime.now().year,
+            initialIntegerValue: widget._pageManager.year ??  DateTime.now().year,
             confirmWidget: Text('OK', style: TextStyle(color: Colors.blue),),
           );
         }).then((year){
-          if (year != null && year != _year) {
-            _year = year;
-            _currentPage = 1;
-            _shows.clear();
-            _isLoading = true;
-            _onUpdate();
+          if (year != null && year != widget._pageManager.year) {
+            setState(() {
+              widget._pageManager.year = year;
+              widget._pageManager.resetLoad();
+              resetScrollController();
+            });
 
-            discover(_isTv, _year, _vote, _genre, _sort, _currentPage).then((data){
+            discover(widget._pageManager.isTv, widget._pageManager.year, widget._pageManager.vote, widget._pageManager.genre, widget._pageManager.sort, widget._pageManager.currentPage).then((data){
               onDataReturn(data);
             });
           }
@@ -208,7 +228,7 @@ class BrowsePageManager{
     );
 
     Widget containerChild;
-    if (_year == null) {
+    if (widget._pageManager.year == null) {
       containerChild = text;
     } else {
       containerChild = Row(children: <Widget>[
@@ -217,14 +237,14 @@ class BrowsePageManager{
           child:
           IconButton(icon: Icon(Icons.clear, size: 15,),
             onPressed: (){
-              if (_year != null) {
-                _year = null;
-                _currentPage = 1;
-                _shows.clear();
-                _isLoading = true;
-                _onUpdate();
+              if (widget._pageManager.year != null) {
+                setState(() {
+                  widget._pageManager.year = null;
+                  widget._pageManager.resetLoad();
+                  resetScrollController();
+                });
 
-                discover(_isTv, _year, _vote, _genre, _sort, _currentPage).then((data){
+                discover(widget._pageManager.isTv, widget._pageManager.year, widget._pageManager.vote, widget._pageManager.genre, widget._pageManager.sort, widget._pageManager.currentPage).then((data){
                   onDataReturn(data);
                 });
               }
@@ -246,26 +266,26 @@ class BrowsePageManager{
   Widget _filterScoreBox(BuildContext context) {
     var text = InkWell(
       child: Center(child: Padding(
-        padding: EdgeInsets.only(left: 10, top: 7.5, bottom: 7.5, right: _vote == null ? 10 : 2.5),
-        child: Text('Score: ${_vote != null ? _vote.toString() + '+' : 'All'}'),
+        padding: EdgeInsets.only(left: 10, top: 7.5, bottom: 7.5, right: widget._pageManager.vote == null ? 10 : 2.5),
+        child: Text('Score: ${widget._pageManager.vote != null ? widget._pageManager.vote.toString() + '+' : 'All'}'),
       ),),
       onTap: (){
         showDialog<double>(context: context,builder: (context){
           return  NumberPickerDialog.decimal(
             minValue: 0,
             maxValue:  10,
-            initialDoubleValue: _vote ?? 5.0,
+            initialDoubleValue: widget._pageManager.vote ?? 5.0,
             confirmWidget: Text('OK', style: TextStyle(color: Colors.blue),),
           );
         }).then((vote){
-          if (vote != null && vote != _vote) {
-            _vote = vote;
-            _currentPage = 1;
-            _shows.clear();
-            _isLoading = true;
-            _onUpdate();
+          if (vote != null && vote != widget._pageManager.vote) {
+            setState(() {
+              widget._pageManager.vote = vote;
+              widget._pageManager.resetLoad();
+              resetScrollController();
+            });
 
-            discover(_isTv, _year, _vote, _genre, _sort, _currentPage).then((data){
+            discover(widget._pageManager.isTv, widget._pageManager.year, widget._pageManager.vote, widget._pageManager.genre, widget._pageManager.sort, widget._pageManager.currentPage).then((data){
               onDataReturn(data);
             });
           }
@@ -274,7 +294,7 @@ class BrowsePageManager{
     );
 
     Widget containerChild;
-    if (_vote == null) {
+    if (widget._pageManager.vote == null) {
       containerChild = text;
     } else {
       containerChild = Row(children: <Widget>[
@@ -283,14 +303,14 @@ class BrowsePageManager{
           child:
           IconButton(icon: Icon(Icons.clear, size: 15,),
             onPressed: (){
-              if (_vote != null) {
-                _vote = null;
-                _currentPage = 1;
-                _shows.clear();
-                _isLoading = true;
-                _onUpdate();
+              if (widget._pageManager.vote != null) {
+                setState(() {
+                  widget._pageManager.vote = null;
+                  widget._pageManager.resetLoad();
+                  resetScrollController();
+                });
 
-                discover(_isTv, _year, _vote, _genre, _sort, _currentPage).then((data){
+                discover(widget._pageManager.isTv, widget._pageManager.year, widget._pageManager.vote, widget._pageManager.genre, widget._pageManager.sort, widget._pageManager.currentPage).then((data){
                   onDataReturn(data);
                 });
               }
@@ -312,27 +332,27 @@ class BrowsePageManager{
   Widget _filterGenreBox(BuildContext context) {
     var text = InkWell(
       child: Center(child: Padding(
-          padding: EdgeInsets.only(left: 10, top: 7.5, bottom: 7.5, right: _genre == null ? 10 : 2.5),
-          child: Text('Genre: ${_genre?.name ?? 'All'}')
+          padding: EdgeInsets.only(left: 10, top: 7.5, bottom: 7.5, right: widget._pageManager.genre == null ? 10 : 2.5),
+          child: Text('Genre: ${widget._pageManager.genre?.name ?? 'All'}')
       ),),
       onTap: (){
         showDialog<Genre>(context: context,
             barrierDismissible: true,
             builder: (context){
               return SelectDialog<Genre>(
-                selectables: _isTv ? _pref.tvGenres : _pref.movieGenres,
-                currentSelect: _genre,
+                selectables: widget._pageManager.isTv ? widget._pref.tvGenres : widget._pref.movieGenres,
+                currentSelect: widget._pageManager.genre,
               );
             }
         ).then((genre){
-          if (genre != null && genre != _genre) {
-            _genre = genre;
-            _currentPage = 1;
-            _shows.clear();
-            _isLoading = true;
-            _onUpdate();
+          if (genre != null && genre != widget._pageManager.genre) {
+            setState(() {
+              widget._pageManager.genre = genre;
+              widget._pageManager.resetLoad();
+              resetScrollController();
+            });
 
-            discover(_isTv, _year, _vote, _genre, _sort, _currentPage).then((data){
+            discover(widget._pageManager.isTv, widget._pageManager.year, widget._pageManager.vote, widget._pageManager.genre, widget._pageManager.sort, widget._pageManager.currentPage).then((data){
               onDataReturn(data);
             });
           }
@@ -341,7 +361,7 @@ class BrowsePageManager{
     );
 
     Widget containerChild;
-    if (_genre == null) {
+    if (widget._pageManager.genre == null) {
       containerChild = text;
     } else {
       containerChild = Row(children: <Widget>[
@@ -350,14 +370,14 @@ class BrowsePageManager{
           child:
           IconButton(icon: Icon(Icons.clear, size: 15,),
             onPressed: (){
-              if (_genre != null) {
-                _genre = null;
-                _currentPage = 1;
-                _shows.clear();
-                _isLoading = true;
-                _onUpdate();
+              if (widget._pageManager.genre != null) {
+                setState(() {
+                  widget._pageManager.genre = null;
+                  widget._pageManager.resetLoad();
+                  resetScrollController();
+                });
 
-                discover(_isTv, _year, _vote, _genre, _sort, _currentPage).then((data){
+                discover(widget._pageManager.isTv, widget._pageManager.year, widget._pageManager.vote, widget._pageManager.genre, widget._pageManager.sort, widget._pageManager.currentPage).then((data){
                   onDataReturn(data);
                 });
               }
@@ -385,26 +405,26 @@ class BrowsePageManager{
         ),
         child: InkWell(
           child:  Center(
-            child: Text('Sort: ${_sort.getString()}'),
+            child: Text('Sort: ${widget._pageManager.sort.getString()}'),
           ),
           onTap: (){
             showDialog<SortType>(context: context,
                 barrierDismissible: true,
                 builder: (context){
                   return SelectDialog<SortType>(
-                    selectables: _isTv ? SortType.allTv() : SortType.allMovie(),
-                    currentSelect: _sort,
+                    selectables: widget._pageManager.isTv ? SortType.allTv() : SortType.allMovie(),
+                    currentSelect: widget._pageManager.sort,
                   );
                 }
             ).then((sort){
-              if (sort != null && sort != _sort) {
-                _sort = sort;
-                _currentPage = 1;
-                _shows.clear();
-                _isLoading = true;
-                _onUpdate();
+              if (sort != null && sort != widget._pageManager.sort) {
+                setState(() {
+                  widget._pageManager.sort = sort;
+                  widget._pageManager.resetLoad();
+                  resetScrollController();
+                });
 
-                discover(_isTv, _year, _vote, _genre, _sort, _currentPage).then((data){
+                discover(widget._pageManager.isTv, widget._pageManager.year, widget._pageManager.vote, widget._pageManager.genre, widget._pageManager.sort, widget._pageManager.currentPage).then((data){
                   onDataReturn(data);
                 });
               }
@@ -455,7 +475,7 @@ class BrowsePageManager{
         Navigator.of(context).push(
             MaterialPageRoute(
                 builder: (BuildContext _) {
-                  return movie.isMovie() ? MovieDetailPage(id: movie.id, pref: _pref,) : TvDetailPage(id: movie.id, pref: _pref,);
+                  return movie.isMovie() ? MovieDetailPage(id: movie.id, pref: widget._pref,) : TvDetailPage(id: movie.id, pref: widget._pref,);
                 }
             )
         );
@@ -465,16 +485,13 @@ class BrowsePageManager{
 
   onDataReturn(ShowListResponse response){
     if (response != null) {
-      _totalPage = response.totalPage ?? 0;
+      widget._pageManager.totalPage = response.totalPage ?? 0;
       if (response.result != null) {
-        _shows.addAll(response.result);
+        widget._pageManager.shows.addAll(response.result);
       }
     }
-    _isLoading = false;
-    _onUpdate();
-  }
-
-  onDispose(){
-    _scrollController.dispose();
+    setState(() {
+      widget._pageManager.isLoading = false;
+    });
   }
 }

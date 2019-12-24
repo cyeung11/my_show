@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_swiper/flutter_swiper.dart';
 import 'package:my_show/model/details.dart';
@@ -11,38 +10,45 @@ import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/movie_list_response.dart';
 import 'package:my_show/page/movie_details_page.dart';
 import 'package:my_show/page/tv_details_page.dart';
+import 'package:my_show/pageview_page/page_manager/trending_page_manager.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import '../asset_path.dart';
 import '../show_storage_helper.dart';
 
-class TrendingPageManager{
+class TrendingPageWidget extends StatefulWidget{
 
-  final MenuAnimator _animator;
   final ShowStorageHelper _pref;
 
-  Future<ShowListResponse> _movies;
+  final TrendingPageManager _pageManager;
 
-  var _currentCarouselPage = 0;
-  var isMenuOverlay = false;
-  var _isTv = true;
+  TrendingPageWidget(this._pref, this._pageManager, {Key key}): super(key: key);
 
-  TrendingType _currentType;
+  @override
+  State createState()  => _TrendingPageState();
+}
 
-  final VoidCallback _onUpdate;
+class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderStateMixin {
 
-  TrendingPageManager(this._onUpdate, this._animator, this._pref);
+  MenuAnimator _animator;
 
-  Widget build(BuildContext context){
-    if (_movies == null) {
-      if (_currentType == null) {
-        _currentType = _isTv ? TrendingType.TvPopular : TrendingType.MoviePopular;
+  @override
+  void initState() {
+    super.initState();
+    _animator = MenuAnimator(this);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget._pageManager.movies == null) {
+      if (widget._pageManager.currentType == null) {
+        widget._pageManager.currentType = widget._pageManager.isTv ? TrendingType.TvPopular : TrendingType.MoviePopular;
       }
-      _reload(context, _currentType);
+      _reload(context, widget._pageManager.currentType);
     }
     return Scaffold(
       body: FutureBuilder<ShowListResponse>(
-        future: _movies,
+        future: widget._pageManager.movies,
         builder: (context, snapshot) {
           return Container(
             color: Color.fromARGB(255, 80, 80, 80),
@@ -54,6 +60,8 @@ class TrendingPageManager{
       ),
     );
   }
+
+
 
   List<Widget> _body(BuildContext context, AsyncSnapshot<ShowListResponse> snapshot) {
     var bodies = List<Widget>();
@@ -85,34 +93,36 @@ class TrendingPageManager{
       child: Row(
         children: <Widget>[
           IconButton(
-            icon: Icon(_isTv ? Icons.movie : Icons.live_tv, color: Colors.white, size: 24,),
+            icon: Icon(widget._pageManager.isTv ? Icons.movie : Icons.live_tv, color: Colors.white, size: 24,),
             onPressed: (){
-              _isTv = !_isTv;
-              _currentType = _isTv ? TrendingType.TvPopular : TrendingType.MoviePopular;
-              _movies = null;
-              _onUpdate();
+              setState(() {
+                widget._pageManager.isTv = !widget._pageManager.isTv;
+                widget._pageManager.currentType = widget._pageManager.isTv ? TrendingType.TvPopular : TrendingType.MoviePopular;
+                widget._pageManager.movies = null;
+              });
             },
           ),
           IconButton(
             icon: Icon(Icons.more_vert, color: Colors.white, size: 24,),
             onPressed: (){
-              isMenuOverlay = true;
-              _onUpdate();
+              setState(() {
+                widget._pageManager.isMenuOverlay = true;
+              });
             },
           )
         ],
       ),
     ));
-    if (isMenuOverlay) {
+    if (widget._pageManager.isMenuOverlay) {
       bodies.add(_menuOverlay(context));
     }
     return bodies;
   }
 
   Widget _showDetail(AsyncSnapshot<ShowListResponse> snapshot) {
-    var hasMovie = snapshot.connectionState == ConnectionState.done && snapshot?.data?.result?.isNotEmpty == true && ((snapshot?.data?.result?.length ?? -1) > _currentCarouselPage);
+    var hasMovie = snapshot.connectionState == ConnectionState.done && snapshot?.data?.result?.isNotEmpty == true && ((snapshot?.data?.result?.length ?? -1) > widget._pageManager.currentCarouselPage);
     if (hasMovie) {
-      var currentMovie = snapshot?.data?.result[_currentCarouselPage];
+      var currentMovie = snapshot?.data?.result[widget._pageManager.currentCarouselPage];
       return Expanded(
           child: ClipRect(
             child: Container(
@@ -234,13 +244,13 @@ class TrendingPageManager{
       if (snapshot.data?.result?.isNotEmpty == true) {
         return Swiper(
           itemBuilder: (context, index) {
-            return InkWell(
+            return GestureDetector(
               onTap: () {
                 Navigator.of(context).push(
                     MaterialPageRoute(
                         builder: (BuildContext _) {
                           var item = snapshot.data?.result[index];
-                          return item.isMovie() ? MovieDetailPage(id: item.id, pref: _pref,) : TvDetailPage(id: item.id, pref: _pref,);
+                          return item.isMovie() ? MovieDetailPage(id: item.id, pref: widget._pref,) : TvDetailPage(id: item.id, pref: widget._pref,);
                         }
                     )
                 );
@@ -256,10 +266,11 @@ class TrendingPageManager{
           itemCount: snapshot.data?.result?.length ?? 0,
           viewportFraction: 0.65,
           scale: 0.7,
-          index: _currentCarouselPage,
+          index: widget._pageManager.currentCarouselPage,
           onIndexChanged: ((index) {
-            _currentCarouselPage = index;
-            _onUpdate();
+            setState(() {
+              widget._pageManager.currentCarouselPage = index;
+            });
           }),
         );
       }
@@ -268,17 +279,18 @@ class TrendingPageManager{
   }
 
   _onMenuSelect(TrendingType newType){
-    if (_currentType != newType) {
-      _currentType = newType;
-      _movies = null;
+    if (widget._pageManager.currentType != newType) {
+      widget._pageManager.currentType = newType;
+      widget._pageManager.movies = null;
     }
-    isMenuOverlay = false;
-    _onUpdate();
+    setState(() {
+      widget._pageManager.isMenuOverlay = false;
+    });
   }
 
   Widget _menuOverlay(BuildContext context) {
-    _animator._startAnimate();
-    return InkWell(
+    _animator.startAnimate();
+    return GestureDetector(
       child: Container(
         color: Colors.black87,
         constraints: BoxConstraints.expand(),
@@ -287,57 +299,57 @@ class TrendingPageManager{
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
             SlideTransition(
-              position: _animator._animation3,
+              position: _animator.animation3,
               child: IconButton(
                 icon: Icon(Icons.clear, size: 24, color: Colors.white,),
-                onPressed: () => _onMenuSelect(_currentType),
+                onPressed: () => _onMenuSelect(widget._pageManager.currentType),
               ),
             ),
             SlideTransition(
-              position: _animator._animation3,
+              position: _animator.animation3,
               child:
               FlatButton.icon(
                 padding: EdgeInsets.all(10),
-                onPressed: () => _onMenuSelect(_isTv ? TrendingType.TvPopular : TrendingType.MoviePopular),
-                icon: Icon(Icons.star, size: 20, color: (_currentType == TrendingType.TvPopular || _currentType == TrendingType.MoviePopular) ? Colors.orangeAccent : Colors.white),
+                onPressed: () => _onMenuSelect(widget._pageManager.isTv ? TrendingType.TvPopular : TrendingType.MoviePopular),
+                icon: Icon(Icons.star, size: 20, color: (widget._pageManager.currentType == TrendingType.TvPopular || widget._pageManager.currentType == TrendingType.MoviePopular) ? Colors.orangeAccent : Colors.white),
                 label: Text("Popular",
-                  style: TextStyle(color: (_currentType == TrendingType.TvPopular || _currentType == TrendingType.MoviePopular) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
+                  style: TextStyle(color: (widget._pageManager.currentType == TrendingType.TvPopular || widget._pageManager.currentType == TrendingType.MoviePopular) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
                 ),
               ),
             ),
             SlideTransition(
-              position: _animator._animation2,
+              position: _animator.animation2,
               child: FlatButton.icon(
                 padding: EdgeInsets.all(10),
-                onPressed: () => _onMenuSelect(_isTv ? TrendingType.TvLatest : TrendingType.MovieLatest),
-                icon: Icon(Icons.new_releases, size: 20, color: (_currentType == TrendingType.TvLatest || _currentType == TrendingType.MovieLatest) ? Colors.orangeAccent : Colors.white),
+                onPressed: () => _onMenuSelect(widget._pageManager.isTv ? TrendingType.TvLatest : TrendingType.MovieLatest),
+                icon: Icon(Icons.new_releases, size: 20, color: (widget._pageManager.currentType == TrendingType.TvLatest || widget._pageManager.currentType == TrendingType.MovieLatest) ? Colors.orangeAccent : Colors.white),
                 label: Text("Latest",
-                  style: TextStyle(color: (_currentType == TrendingType.TvLatest || _currentType == TrendingType.MovieLatest) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
+                  style: TextStyle(color: (widget._pageManager.currentType == TrendingType.TvLatest || widget._pageManager.currentType == TrendingType.MovieLatest) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
                 ),
               ),
             ),
             SlideTransition(
-              position: _animator._animation2,
+              position: _animator.animation2,
               child:
               FlatButton.icon(
                 padding: EdgeInsets.all(10),
-                onPressed: () => _onMenuSelect(_isTv ? TrendingType.TvTopRate : TrendingType.TvTopRate),
-                icon: Icon(Icons.thumb_up, size: 20, color: (_currentType == TrendingType.TvTopRate || _currentType == TrendingType.MovieTopRate) ? Colors.orangeAccent : Colors.white),
+                onPressed: () => _onMenuSelect(widget._pageManager.isTv ? TrendingType.TvTopRate : TrendingType.TvTopRate),
+                icon: Icon(Icons.thumb_up, size: 20, color: (widget._pageManager.currentType == TrendingType.TvTopRate || widget._pageManager.currentType == TrendingType.MovieTopRate) ? Colors.orangeAccent : Colors.white),
                 label: Text("Top Rated",
-                  style: TextStyle(color: (_currentType == TrendingType.TvTopRate || _currentType == TrendingType.MovieTopRate) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
+                  style: TextStyle(color: (widget._pageManager.currentType == TrendingType.TvTopRate || widget._pageManager.currentType == TrendingType.MovieTopRate) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
                 ),
               ),
             ),
             SlideTransition(
-              position: _animator._animation1,
+              position: _animator.animation1,
               child:
               FlatButton.icon(
                 padding: EdgeInsets.all(10),
-                onPressed: () => _onMenuSelect(_isTv ? TrendingType.TvOnAir : TrendingType.MovieUpcoming),
-                icon: Icon(_isTv ?Icons.play_arrow : Icons.calendar_today, size: 20,
-                    color: (_currentType == TrendingType.TvOnAir || _currentType == TrendingType.MovieUpcoming) ? Colors.orangeAccent : Colors.white),
-                label: Text(_isTv ? 'On the Air' : 'Upcoming' ,
-                  style: TextStyle(color: (_currentType == TrendingType.TvOnAir || _currentType == TrendingType.MovieUpcoming) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
+                onPressed: () => _onMenuSelect(widget._pageManager.isTv ? TrendingType.TvOnAir : TrendingType.MovieUpcoming),
+                icon: Icon(widget._pageManager.isTv ?Icons.play_arrow : Icons.calendar_today, size: 20,
+                    color: (widget._pageManager.currentType == TrendingType.TvOnAir || widget._pageManager.currentType == TrendingType.MovieUpcoming) ? Colors.orangeAccent : Colors.white),
+                label: Text(widget._pageManager.isTv ? 'On the Air' : 'Upcoming' ,
+                  style: TextStyle(color: (widget._pageManager.currentType == TrendingType.TvOnAir || widget._pageManager.currentType == TrendingType.MovieUpcoming) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
                 ),
               ),
             ),
@@ -345,7 +357,7 @@ class TrendingPageManager{
         ),
       ),
       onTap: (){
-        _onMenuSelect(_currentType);
+        _onMenuSelect(widget._pageManager.currentType);
       },
     );
 
@@ -356,8 +368,9 @@ class TrendingPageManager{
       action: SnackBarAction(
         label: 'Retry',
         onPressed: () {
-          _reload(context, type);
-          _onUpdate();
+          setState(() {
+            _reload(context, type);
+          });
         },
       ),
     );
@@ -366,8 +379,8 @@ class TrendingPageManager{
   }
 
   _reload(BuildContext context, TrendingType type) {
-    _currentCarouselPage = 0;
-    _movies = getShows(getNetworkPath(type), null, 1).then((data) {
+    widget._pageManager.currentCarouselPage = 0;
+    widget._pageManager.movies = getShows(getNetworkPath(type), null, 1).then((data) {
       if (data == null) {
         _showRetrySnackbar(context, type);
       }
@@ -403,42 +416,4 @@ class TrendingPageManager{
       }
     }
   }
-}
-
-enum TrendingType{
-  TvLatest, TvPopular, TvTopRate, TvOnAir, MovieLatest, MoviePopular, MovieTopRate, MovieUpcoming
-}
-
-class MenuAnimator{
-  Animation<Offset> _animation1, _animation2, _animation3;
-  AnimationController _animationController1, _animationController2, _animationController3;
-
-  MenuAnimator(TickerProviderStateMixin mixin){
-    _animationController1 = AnimationController(vsync: mixin, duration: Duration(milliseconds: 350));
-    _animationController2 = AnimationController(vsync: mixin, duration: Duration(milliseconds: 250));
-    _animationController3 = AnimationController(vsync: mixin, duration: Duration(milliseconds: 200));
-    _animation1 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(_animationController1);
-    _animation2 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(_animationController2);
-    _animation3 = Tween<Offset>(begin: Offset(1.5, 0), end: Offset.zero).animate(_animationController3);
-  }
-
-  _startAnimate() {
-    _stopAnimate();
-    if (_animationController1.status == AnimationStatus.dismissed) {
-      _animationController1.forward();
-    }
-    if (_animationController2.status == AnimationStatus.dismissed) {
-      _animationController2.forward();
-    }
-    if (_animationController3.status == AnimationStatus.dismissed) {
-      _animationController3.forward();
-    }
-  }
-
-  _stopAnimate() {
-    _animationController1.reset();
-    _animationController2.reset();
-    _animationController3.reset();
-  }
-
 }

@@ -3,13 +3,17 @@ import 'dart:io';
 import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:my_show/pagemanager/browse_page_manager.dart';
-import 'package:my_show/pagemanager/saved_page_manager.dart';
-import 'package:my_show/pagemanager/search_page_manager.dart';
-import 'package:my_show/pagemanager/trending_page_manager.dart';
+import 'package:my_show/pageview_page/browse_page_widget.dart';
+import 'package:my_show/pageview_page/page_manager/browse_page_manager.dart';
+import 'package:my_show/pageview_page/page_manager/saved_page_manager.dart';
+import 'package:my_show/pageview_page/page_manager/search_page_manager.dart';
+import 'package:my_show/pageview_page/page_manager/trending_page_manager.dart';
+import 'package:my_show/pageview_page/saved_page_widget.dart';
+import 'package:my_show/pageview_page/search_page_widget.dart';
+import 'package:my_show/pageview_page/setting_page_widget.dart';
+import 'package:my_show/pageview_page/trending_page_widget.dart';
 
 import '../show_storage_helper.dart';
-import 'info_page.dart';
 
 class HomePage extends StatefulWidget{
   final ShowStorageHelper pref;
@@ -20,16 +24,18 @@ class HomePage extends StatefulWidget{
   State<StatefulWidget> createState() => HomePageState();
 }
 
-class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerProviderStateMixin {
+class HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   static const platform = const MethodChannel('com.jkjk.my_show');
 
   var _currentItem = 0;
   PageController _pageController;
-  SearchPageManager _searchPageManager;
+
+  // State holders
+  SearchPageManager _searchPageManager = SearchPageManager();
   SavedPageManager _savedPageManager;
-  TrendingPageManager _trendingPageManager;
-  BrowsePageManager _browsePageManager;
+  TrendingPageManager _trendingPageManager = TrendingPageManager();
+  BrowsePageManager _browsePageManager = BrowsePageManager();
 
   @override
   void initState() {
@@ -37,22 +43,13 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerP
     WidgetsBinding.instance.addObserver(this);
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarBrightness: Brightness.dark),);
 
-    VoidCallback voidCallback = (){
-      setState(() {
-      });
-    };
     _pageController = PageController();
-    _searchPageManager = SearchPageManager(voidCallback, widget.pref);
-    _savedPageManager = SavedPageManager(voidCallback, widget.pref);
-    _trendingPageManager = TrendingPageManager(voidCallback, MenuAnimator(this), widget.pref);
-    _browsePageManager = BrowsePageManager(voidCallback, widget.pref);
+    _savedPageManager = SavedPageManager(widget.pref);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _searchPageManager.onDispose();
-    _browsePageManager.onDispose();
     super.dispose();
   }
 
@@ -87,19 +84,19 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerP
   Widget _page(BuildContext context, int index){
     switch (index) {
       case 0: {
-        return _trendingPageManager.build(context);
+        return TrendingPageWidget(widget.pref, _trendingPageManager);
       }
       case 1: {
-        return _browsePageManager.build(context);
+        return BrowsePageWidget(widget.pref, _browsePageManager);
       }
       case 2: {
-        return _searchPageManager.build(context);
+        return SearchPageWidget(widget.pref, _searchPageManager);
       }
       case 3: {
-        return _savedPageManager.build(context);
+        return SavedPageWidget(widget.pref, _savedPageManager);
       }
       default: {
-        return _settingPage();
+        return SettingPageWidget();
       }
     }
   }
@@ -178,50 +175,5 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver, TickerP
     }
 
     return Future.value(true);
-  }
-
-  Widget _settingPage(){
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: ListView(
-          children: <Widget>[
-            InkWell(
-              child: SizedBox(
-                height: 60,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: <Widget>[
-                      Text('Privacy',
-                        style: TextStyle(color: Colors.white, fontSize: 18),
-                      ),
-                      Spacer(),
-                      Icon(Icons.arrow_forward, color: Colors.white)
-                    ],
-                  ),
-                ),
-              ),
-              onTap: (){
-                Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (BuildContext _) {
-                          return InfoPage();
-                        }
-                    )
-                );
-              },
-            ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 30, vertical: 5),
-              child: Text('MyShow by C H Yeung\n\nThis APP uses the TMDb API but is not endorsed or certified by TMDb.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white38, fontSize: 12),
-              ),
-            )
-          ],
-        ),
-      ),
-    );
   }
 }

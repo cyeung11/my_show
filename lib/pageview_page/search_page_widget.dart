@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:my_show/model/show.dart';
 import 'package:my_show/network/api_constant.dart';
@@ -7,54 +6,47 @@ import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/movie_list_response.dart';
 import 'package:my_show/page/movie_details_page.dart';
 import 'package:my_show/page/tv_details_page.dart';
+import 'package:my_show/pageview_page/page_manager/search_page_manager.dart';
 
 import '../asset_path.dart';
 import '../show_storage_helper.dart';
 
-class SearchPageManager{
-
-  String _query;
-
-  bool _isLoading = false;
-  int _currentPage = 1;
-
-  bool _isTv = true;
-
-  final VoidCallback _onUpdate;
+class SearchPageWidget extends StatefulWidget{
 
   final ShowStorageHelper _pref;
-  final ScrollController _scrollController = ScrollController();
 
-  final List<Show> _shows = List<Show>();
-  int _totalPage;
+  final SearchPageManager _pageManager;
 
-  SearchPageManager(this._onUpdate, this._pref){
+  SearchPageWidget( this._pref, this._pageManager, {Key key}): super(key: key);
+
+  @override
+  State createState()  => _SearchPageState();
+}
+
+class _SearchPageState extends State<SearchPageWidget> {
+
+  ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    resetScrollController();
+  }
+
+  resetScrollController(){
+    _scrollController = ScrollController(initialScrollOffset: widget._pageManager.scrollOffsetToRestore);
     _scrollController.addListener(_scrollListener);
   }
 
-  _scrollListener() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent && _query?.isNotEmpty == true) {
-      if (_currentPage + 1 <= _totalPage) {
-        _currentPage++;
-        _isLoading = true;
-
-        _onUpdate();
-
-        getShows(_isTv ? SEARCH_TV : SEARCH_MOVIE, _query, _currentPage).then((data){
-          onDataReturn(data);
-        });
-      }
-    }
-  }
-
-  Widget build(BuildContext context){
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
         child: Container(
             child: Column(
               children: <Widget>[
-                _searchTextBox(_isTv),
+                _searchTextBox(widget._pageManager.isTv),
                 buildResultList(context)
               ],
             )
@@ -62,6 +54,28 @@ class SearchPageManager{
       ),
     );
   }
+
+  @override
+  dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  _scrollListener() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent && widget._pageManager.query?.isNotEmpty == true) {
+      if (widget._pageManager.currentPage + 1 <= widget._pageManager.totalPage) {
+        setState(() {
+          widget._pageManager.currentPage++;
+          widget._pageManager.isLoading = true;
+
+          getShows(widget._pageManager.isTv ? SEARCH_TV : SEARCH_MOVIE, widget._pageManager.query, widget._pageManager.currentPage).then((data){
+            onDataReturn(data);
+          });
+        });
+      }
+    }
+  }
+
 
   Widget _searchTextBox(bool isTv){
     return Row(
@@ -95,18 +109,18 @@ class SearchPageManager{
                       ),
                       textInputAction: TextInputAction.search,
                       onChanged: (query){
-                        _query = query.trim();
+                        widget._pageManager.query = query.trim();
                       },
                       maxLines: 1,
                       onSubmitted: (query){
                         if (query?.isNotEmpty == true) {
-                          _query = query.trim();
-                          _currentPage = 1;
-                          _shows.clear();
-                          _isLoading = true;
-                          _onUpdate();
+                          setState(() {
+                            widget._pageManager.query = query.trim();
+                            widget._pageManager.resetLoad();
+                            resetScrollController();
+                          });
 
-                          getShows(!isTv ? SEARCH_MOVIE : SEARCH_TV, _query, _currentPage).then((data){
+                          getShows(!isTv ? SEARCH_MOVIE : SEARCH_TV, widget._pageManager.query, widget._pageManager.currentPage).then((data){
                             onDataReturn(data);
                           });
                         }
@@ -122,19 +136,20 @@ class SearchPageManager{
           padding: EdgeInsets.symmetric(horizontal: 4),
           icon: Icon( !isTv ? Icons.live_tv : Icons.movie, color: Colors.white,),
           onPressed: (){
-            if (_query?.isNotEmpty == true) {
-              _currentPage = 1;
-              _shows.clear();
-              _isLoading = true;
-              _isTv = !_isTv;
-              _onUpdate();
+            if (widget._pageManager.query?.isNotEmpty == true) {
+              setState(() {
+                widget._pageManager.resetLoad();
+                resetScrollController();
+                widget._pageManager.isTv = !widget._pageManager.isTv;
+              });
 
-              getShows(isTv ? SEARCH_MOVIE : SEARCH_TV, _query, _currentPage).then((data){
+              getShows(isTv ? SEARCH_MOVIE : SEARCH_TV, widget._pageManager.query, widget._pageManager.currentPage).then((data){
                 onDataReturn(data);
               });
             } else {
-              _isTv = !_isTv;
-              _onUpdate();
+              setState(() {
+                widget._pageManager.isTv = !widget._pageManager.isTv;
+              });
             }
           },
         ),
@@ -144,8 +159,8 @@ class SearchPageManager{
   }
 
   Widget buildResultList(BuildContext context){
-    if (_shows.isEmpty) {
-      if (_isLoading) {
+    if (widget._pageManager.shows.isEmpty) {
+      if (widget._pageManager.isLoading) {
         return Padding(padding: EdgeInsets.only(top: 10), child: CircularProgressIndicator());
       } else {
         return Container();
@@ -155,12 +170,12 @@ class SearchPageManager{
     var entries = ListTile.divideTiles(
         color: Colors.white30,
         context: context,
-        tiles: _shows.map((Show currentMovie){
+        tiles: widget._pageManager.shows.map((Show currentMovie){
           return _movieEntry(context, currentMovie);
         })
     ).toList();
 
-    if (_isLoading) {
+    if (widget._pageManager.isLoading) {
       entries.add(SizedBox(
         height: 100,
         child: Center(
@@ -170,9 +185,17 @@ class SearchPageManager{
     }
 
     return Expanded(
-      child: ListView(
-          controller: _scrollController,
-          children: entries
+      child: NotificationListener(
+        child: ListView(
+            controller: _scrollController,
+            children: entries
+        ),
+        onNotification: (notification){
+          if (notification is ScrollNotification) {
+            widget._pageManager.scrollOffsetToRestore = notification.metrics.pixels;
+          }
+          return false;
+        },
       ),
     );
   }
@@ -232,7 +255,7 @@ class SearchPageManager{
         Navigator.of(context).push(
             MaterialPageRoute(
                 builder: (BuildContext _) {
-                  return movie.isMovie() ? MovieDetailPage(id: movie.id, pref: _pref,) : TvDetailPage(id: movie.id, pref: _pref,);
+                  return movie.isMovie() ? MovieDetailPage(id: movie.id, pref: widget._pref,) : TvDetailPage(id: movie.id, pref: widget._pref,);
                 }
             )
         );
@@ -241,17 +264,15 @@ class SearchPageManager{
   }
 
   onDataReturn(ShowListResponse response){
-    if (response != null) {
-      _totalPage = response.totalPage ?? 0;
-      if (response.result != null) {
-        _shows.addAll(response.result);
+    setState(() {
+      if (response != null) {
+        widget._pageManager.totalPage = response.totalPage ?? 0;
+        if (response.result != null) {
+          widget._pageManager.shows.addAll(response.result);
+        }
+        widget._pageManager.isLoading = false;
       }
-      _isLoading = false;
-    }
-    _onUpdate();
+    });
   }
 
-  onDispose(){
-    _scrollController.dispose();
-  }
 }

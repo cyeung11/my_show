@@ -29,10 +29,10 @@ class SortType implements Selectable{
     return SortType('Lowest Score', 'vote_average.asc');
   }
   factory SortType.releaseDesc(){
-    return SortType('Latest', 'release_date.desc');
+    return SortType('Latest', 'primary_release_date.desc');
   }
   factory SortType.releaseAsc(){
-    return SortType('Oldest', 'release_date.asc');
+    return SortType('Oldest', 'primary_release_date.asc');
   }
   factory SortType.firstAirDesc(){
     return SortType('Latest', 'first_air_date.desc');

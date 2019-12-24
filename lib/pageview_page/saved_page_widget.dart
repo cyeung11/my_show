@@ -1,53 +1,60 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:my_show/dialog/episode_select_dialog.dart';
 import 'package:my_show/model/movie_details.dart';
 import 'package:my_show/model/tv_details.dart';
 import 'package:my_show/model/watch_progress.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/page/movie_details_page.dart';
 import 'package:my_show/page/tv_details_page.dart';
+import 'package:my_show/pageview_page/page_manager/saved_page_manager.dart';
 
 import '../asset_path.dart';
-import '../dialog/episode_select_dialog.dart';
 import '../show_storage_helper.dart';
 
-class SavedPageManager{
-
-  bool deleteMode = false;
-
-  bool _isTv = true;
-
-  bool _needSave = false;
-
-  final VoidCallback _onUpdate;
+class SavedPageWidget extends StatefulWidget{
 
   final ShowStorageHelper _pref;
 
-  SavedPageManager(this._onUpdate, this._pref);
+  final SavedPageManager _pageManager;
 
-  saveToStorage(){
-    if (_needSave) {
-      _pref.saveTv().whenComplete((){
-        _needSave = false;
-      });
-    }
+  SavedPageWidget( this._pref, this._pageManager, {Key key}): super(key: key);
+
+  @override
+  State createState()  => _SavedPageState();
+}
+
+class _SavedPageState extends State<SavedPageWidget> {
+
+  ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController(initialScrollOffset: widget._pageManager.scrollOffsetToRestore);
   }
 
-  Widget build(BuildContext context){
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _appBar(_isTv),
+      appBar: _appBar(widget._pageManager.isTv),
       backgroundColor: Colors.black,
       body: Column(
         children: <Widget>[
           Expanded(
-            child: _savedList(context, _isTv),
+            child: _savedList(context, widget._pageManager.isTv),
           )
         ],
       ),
     );
   }
 
+  @override
+  dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+  
   Widget _appBar(bool isTv){
     return AppBar(
       brightness: Brightness.dark,
@@ -64,16 +71,18 @@ class SavedPageManager{
           icon: Icon(isTv ? Icons.movie : Icons.live_tv),
           color: Colors.white,
           onPressed: (){
-            _isTv = !_isTv;
-            _onUpdate();
+            setState(() {
+              widget._pageManager.isTv = !widget._pageManager.isTv;
+            });
           },
         ),
         IconButton(
-          icon: Icon(deleteMode ? Icons.done : Icons.edit),
+          icon: Icon(widget._pageManager.deleteMode ? Icons.done : Icons.edit),
           color: Colors.white,
           onPressed: (){
-            deleteMode = !deleteMode;
-            _onUpdate();
+            setState(() {
+              widget._pageManager.deleteMode = !widget._pageManager.deleteMode;
+            });
           },
         ),
       ],
@@ -81,7 +90,7 @@ class SavedPageManager{
   }
 
   Widget _savedList(BuildContext context, bool isTv){
-    Map<int, dynamic> data = isTv ? _pref.watchTv.asMap() : _pref.savedMovie.asMap();
+    Map<int, dynamic> data = isTv ? widget._pref.watchTv.asMap() : widget._pref.savedMovie.asMap();
     if (data.isEmpty) {
       return Center(
         child: Text('Nothing yet :(',
@@ -91,14 +100,23 @@ class SavedPageManager{
           ),),
       );
     } else {
-      return ListView(
-          children: ListTile.divideTiles(
-              color: Colors.white30,
-              context: context,
-              tiles: data.keys.map((int index) {
-                return isTv ? _tvEntry(context, data[index] as TvDetails, index) : _movieEntry(context, data[index] as MovieDetails, index);
-              })
-          ).toList()
+      return NotificationListener(
+        child: ListView(
+          controller: _scrollController,
+            children: ListTile.divideTiles(
+                color: Colors.white30,
+                context: context,
+                tiles: data.keys.map((int index) {
+                  return isTv ? _tvEntry(context, data[index] as TvDetails, index) : _movieEntry(context, data[index] as MovieDetails, index);
+                })
+            ).toList()
+        ),
+        onNotification: (notification){
+          if (notification is ScrollNotification) {
+            widget._pageManager.scrollOffsetToRestore = notification.metrics.pixels;
+          }
+          return false;
+        },
       );
     }
   }
@@ -125,11 +143,11 @@ class SavedPageManager{
     return InkWell(
       child: child,
       onTap: () {
-        if (!deleteMode) {
+        if (!widget._pageManager.deleteMode) {
           Navigator.of(context).push(
               MaterialPageRoute(
                   builder: (BuildContext _) {
-                    return isTv ? TvDetailPage(id: id, pref: _pref,) : MovieDetailPage(id: id, pref: _pref,);
+                    return isTv ? TvDetailPage(id: id, pref: widget._pref,) : MovieDetailPage(id: id, pref: widget._pref,);
                   }
               )
           );
@@ -182,26 +200,28 @@ class SavedPageManager{
         )
     );
     widgetList.add(SizedBox(width: 5,));
-    if (deleteMode) {
+    if (widget._pageManager.deleteMode) {
       widgetList.add(_deleteModeDeleteButton(context, false, movie.id));
       return Row(children: widgetList,);
     }
     return Builder(
       builder: (BuildContext context){
         return _dismissible(context, (_){
-          _pref.removeMovie(movie.id).whenComplete((){
-            _needSave = false;
+          setState(() {
+            widget._pref.removeMovie(movie.id).whenComplete((){
+              widget._pageManager.needSave = false;
+            });
           });
-          _onUpdate();
           Scaffold.of(context).showSnackBar(
               SnackBar(content: Text('Item removed'),
                 action: SnackBarAction(
                   label: 'Undo',
                   onPressed: () {
-                    _pref.addMovie(movie, index: indexInList).whenComplete((){
-                      _needSave = false;
+                    setState(() {
+                      widget._pref.addMovie(movie, index: indexInList).whenComplete((){
+                        widget._pageManager.needSave = false;
+                      });
                     });
-                    _onUpdate();
                   },
                 ),
               )
@@ -234,7 +254,7 @@ class SavedPageManager{
     widgetList.add(
         SizedBox(width: 5,)
     );
-    if (deleteMode) {
+    if (widget._pageManager.deleteMode) {
       widgetList.add(_deleteModeDeleteButton(context, true, tv.id));
       return Row(children: widgetList,);
     }
@@ -242,19 +262,21 @@ class SavedPageManager{
         builder: (BuildContext context) {
           return _dismissible(context,
                   (_) {
-                _pref.removeTv(tv.id).whenComplete((){
-                  _needSave = false;
+                setState(() {
+                  widget._pref.removeTv(tv.id).whenComplete((){
+                    widget._pageManager.needSave = false;
+                  });
                 });
-                _onUpdate();
                 Scaffold.of(context).showSnackBar(
                     SnackBar(content: Text('Item removed'),
                       action: SnackBarAction(
                         label: 'Undo',
                         onPressed: () {
-                          _pref.addTv(tv, index: indexInList).whenComplete((){
-                            _needSave = false;
+                          setState(() {
+                            widget._pref.addTv(tv, index: indexInList).whenComplete((){
+                              widget._pageManager.needSave = false;
+                            });
                           });
-                          _onUpdate();
                         },
                       ),
                     )
@@ -321,16 +343,17 @@ class SavedPageManager{
                   style: TextStyle(color: Colors.redAccent),),
                 onPressed: (){
                   Navigator.of(context).pop();
-                  if (isTv) {
-                    _pref.removeTv(id).whenComplete((){
-                      _needSave = false;
-                    });
-                  } else {
-                    _pref.removeMovie(id).whenComplete((){
-                      _needSave = false;
-                    });
-                  }
-                  _onUpdate();
+                  setState(() {
+                    if (isTv) {
+                      widget._pref.removeTv(id).whenComplete((){
+                        widget._pageManager.needSave = false;
+                      });
+                    } else {
+                      widget._pref.removeMovie(id).whenComplete((){
+                        widget._pageManager.needSave = false;
+                      });
+                    }
+                  });
                 },
               ),
             ],
@@ -343,7 +366,7 @@ class SavedPageManager{
     var isLast = tv.lastEpisodeAir?.seasonNo == tv.progress?.seasonNo && tv.lastEpisodeAir?.episodeNo == tv.progress?.episodeNo;
     var isFirst = tv.progress?.seasonNo == 1 && tv.progress?.episodeNo == 1;
     List<Widget> widgetList = List<Widget>();
-    if (!deleteMode) {
+    if (!widget._pageManager.deleteMode) {
       widgetList.add(IconButton(
         icon: Icon(Icons.add),
         color: Colors.white,
@@ -351,9 +374,10 @@ class SavedPageManager{
         onPressed: isLast
             ? null
             : (){
-          tv.progress = tv.progress.next(tv.seasons);
-          _needSave = true;
-          _onUpdate();
+          setState(() {
+            tv.progress = tv.progress.next(tv.seasons);
+            widget._pageManager.needSave = true;
+          });
         },
       ));
     }
@@ -363,7 +387,7 @@ class SavedPageManager{
         color: Colors.white,
       ),
     ));
-    if (deleteMode) {
+    if (widget._pageManager.deleteMode) {
       widgetList.add(
           IconButton(
             icon: Icon(Icons.edit, size: 14),
@@ -382,9 +406,10 @@ class SavedPageManager{
             onPressed: isFirst
                 ? null
                 : (){
-              tv.progress = tv.progress.previous(tv.seasons);
-              _needSave = true;
-              _onUpdate();
+              setState(() {
+                tv.progress = tv.progress.previous(tv.seasons);
+                widget._pageManager.needSave = true;
+              });
             },
           )
       );
@@ -403,9 +428,10 @@ class SavedPageManager{
           );
         }
     ).then((progress){
-      tv.progress = progress;
-      _needSave = true;
-      _onUpdate();
+      setState(() {
+        tv.progress = progress;
+        widget._pageManager.needSave = true;
+      });
     });
   }
 }

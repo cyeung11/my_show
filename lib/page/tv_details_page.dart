@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:my_show/model/cast.dart';
@@ -12,6 +14,7 @@ import 'package:percent_indicator/circular_percent_indicator.dart';
 import '../asset_path.dart';
 import '../show_storage_helper.dart';
 import 'crew_page.dart';
+import 'gallery_page.dart';
 
 class TvDetailPage extends StatefulWidget{
   final int id;
@@ -30,24 +33,38 @@ class _TvPageState extends State<TvDetailPage>{
 
   CreditResponse _credit;
   List<Show> _similar;
+  List<String> _images;
 
   @override
   void initState() {
     super.initState();
-    getCredit(true, widget.id).then((response){
-      if (response?.cast?.isNotEmpty == true) {
-        setState(() {
-          _credit = response;
-        });
-      }
-    });
-    getShows(GET_TV_DETAIL + widget.id.toString() + SIMILAR, null, null).then((response){
-      if (response?.result != null) {
-        setState(() {
-          _similar = response.result;
-        });
-      }
-    });
+    if (_credit == null) {
+      getCredit(true, widget.id).then((response){
+        if (response?.cast?.isNotEmpty == true) {
+          setState(() {
+            _credit = response;
+          });
+        }
+      });
+    }
+    if (_images == null) {
+      getMedia(GET_TV_DETAIL + widget.id.toString() + IMAGE).then((response){
+        if (response?.backdrops?.isNotEmpty == true) {
+          setState(() {
+            _images = response.backdrops?.map((bd) => bd.filePath ?? '')?.toList() ?? List();
+          });
+        }
+      });
+    }
+    if (_similar == null) {
+      getShows(GET_TV_DETAIL + widget.id.toString() + SIMILAR, null, null).then((response){
+        if (response?.result != null) {
+          setState(() {
+            _similar = response.result;
+          });
+        }
+      });
+    }
   }
 
   @override
@@ -126,11 +143,22 @@ class _TvPageState extends State<TvDetailPage>{
           Container(
             width: screenWidth,
             height: backdropHeight,
-            child: CachedNetworkImage(
-                imageUrl: BACKDROP_IMAGE_PREFIX_HD + (tv.backdropPath ?? ''),
-                fit: BoxFit.scaleDown,
-                placeholder: (context, _) => Image.asset(BACKDROP_PLACEHOLDER),
-                height: backdropHeight, width: screenWidth
+            child: GestureDetector(
+              child: CachedNetworkImage(
+                  imageUrl: BACKDROP_IMAGE_PREFIX_HD + (tv.backdropPath ?? ''),
+                  fit: BoxFit.scaleDown,
+                  placeholder: (context, _) => Image.asset(BACKDROP_PLACEHOLDER),
+                  height: backdropHeight, width: screenWidth
+              ),
+              onTap: (){
+                if (tv.backdropPath?.isNotEmpty == true) {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) {
+                        return GalleryPage([tv.backdropPath]);
+                      }
+                  ));
+                }
+              },
             ),
           ),
           Container(
@@ -148,11 +176,22 @@ class _TvPageState extends State<TvDetailPage>{
           Positioned(
             top: posterTopSpace,
             height: posterHeight, width: posterWidth,
-            child: CachedNetworkImage(
-              imageUrl: IMAGE_PREFIX + (tv.posterPath ?? ''),
-              fit: BoxFit.scaleDown,
-              placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
-              height: posterHeight, width: posterWidth,
+            child: GestureDetector(
+              child: CachedNetworkImage(
+                imageUrl: IMAGE_PREFIX + (tv.posterPath ?? ''),
+                fit: BoxFit.scaleDown,
+                placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
+                height: posterHeight, width: posterWidth,
+              ),
+              onTap: (){
+                if (tv.posterPath?.isNotEmpty == true) {
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) {
+                        return GalleryPage([tv.posterPath]);
+                      }
+                  ));
+                }
+              },
             ),
           ),
           Positioned(
@@ -307,6 +346,7 @@ class _TvPageState extends State<TvDetailPage>{
       listChild.add(Container(
         height: 250,
         child: ListView.builder(
+            padding: EdgeInsets.symmetric(horizontal: 16),
             itemCount: _credit.cast.length,
             scrollDirection: Axis.horizontal,
             itemBuilder: (context, index){
@@ -442,6 +482,52 @@ class _TvPageState extends State<TvDetailPage>{
       });
     }
 
+    if (_images?.isNotEmpty == true) {
+      listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
+
+      listChild.add(Padding(
+          padding: EdgeInsets.only(left: 16, right: 16, top: 10),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Text('Photos',
+                    style: TextStyle(
+                      fontSize: 20.0,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    )),
+              ),
+              InkWell(
+                child: Text('more',
+                    style: TextStyle(
+                      fontSize: 14.0,
+                      color: Colors.blueGrey,
+                    )),
+                onTap: (){
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_){
+                        return GalleryPage(_images);
+                      }
+                  ));
+                },
+              )
+            ],
+          )
+      ));
+
+      listChild.add(Container(
+        height: 150,
+        child: ListView.builder(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            itemCount: min(5, _images.length),
+            scrollDirection: Axis.horizontal,
+            itemBuilder: (context, index){
+              return _photoBox(context, index);
+            }
+        ),
+      ));
+    }
+
     listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
 
     listChild.add(InkWell(
@@ -540,9 +626,28 @@ class _TvPageState extends State<TvDetailPage>{
     );
   }
 
+  _photoBox(BuildContext context, int index) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+      width: 200, height: 150,
+      child: GestureDetector(
+        child: CachedNetworkImage(imageUrl: BACKDROP_IMAGE_PREFIX + (_images[index]),
+            fit: BoxFit.cover,
+            placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
+            height: 150, width: 200),
+        onTap: (){
+          Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) {
+                return GalleryPage(_images, initialIndex: index,);
+              }
+          ));
+        },
+      ),
+    );
+  }
 
   _similarBox(BuildContext context, Show show) {
-    return InkWell(
+    return GestureDetector(
       child: Container(
         margin: EdgeInsets.symmetric(horizontal: 5, vertical: 10),
         color: Color.fromARGB(255, 40, 40, 40),

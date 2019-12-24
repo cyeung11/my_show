@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:my_show/model/genre.dart';
+import 'package:my_show/model/media.dart';
 import 'package:my_show/model/movie_details.dart';
 import 'package:my_show/model/sort.dart';
 import 'package:my_show/model/tv_details.dart';
@@ -41,7 +42,11 @@ Future<ShowListResponse> discover(bool forTv, int year, double voteAverage, Genr
     'api_key': API_KEY_V3,
   };
   if (year != null) {
-    queryParameters[forTv ? 'first_air_date_year' :'year'] = year.toString();
+    if (forTv) {
+      queryParameters['first_air_date_year'] = year.toString();
+    } else {
+      queryParameters['primary_release_date.gte'] = '$year-01-01';
+    }
   }
   if (voteAverage != null) {
     queryParameters['vote_average.gte'] = voteAverage.toString();
@@ -129,6 +134,22 @@ Future<TvDetails> getTVDetail(int id) async {
     final response = await http.get(Uri.https(DOMAIN, GET_TV_DETAIL + id.toString(), queryParameters));
     if (response.statusCode == 200) {
       return TvDetails.fromJson(json.decode(response.body));
+    } else {
+      return null;
+    }
+  } catch (e) {
+    return null;
+  }
+}
+
+Future<ShowMedia> getMedia(String path) async {
+  var queryParameters = {
+    'api_key': API_KEY_V3,
+  };
+  try {
+    final response = await http.get(Uri.https(DOMAIN, path, queryParameters));
+    if (response.statusCode == 200) {
+      return ShowMedia.fromJson(json.decode(response.body));
     } else {
       return null;
     }
