@@ -96,7 +96,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         return SavedPageWidget(widget.pref, _savedPageManager);
       }
       default: {
-        return SettingPageWidget();
+        return SettingPageWidget(widget.pref);
       }
     }
   }

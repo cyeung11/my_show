@@ -12,6 +12,7 @@ const String PREF_SAVED_MOVIE = "saved_movie";
 const String PREF_WATCH_TV = "watched_tv";
 const String PREF_TV_GENRE = "tv_genre";
 const String PREF_MOVIE_GENRE = "movie_genre";
+const String PREF_DRIVE_USER_NAME = "drive_user_name";
 
 class ShowStorageHelper {
   SharedPreferences pref;
@@ -135,6 +136,18 @@ class ShowStorageHelper {
   }
   List<Genre> getMovieGenre(){
     return _getGenre(PREF_MOVIE_GENRE);
+  }
+
+  setValue(String key, String value){
+    if (value?.isNotEmpty == true) {
+      pref.setString(key, value);
+    } else {
+      pref.remove(key);
+    }
+  }
+
+  String getString(String key){
+    return pref.getString(key);
   }
 
 }
