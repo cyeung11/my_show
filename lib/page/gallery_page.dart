@@ -12,12 +12,14 @@ class GalleryPage extends StatefulWidget{
   GalleryPage(this.photoPaths, {this.initialIndex = 0, Key key}): super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _GalleryPageState();
+  State<StatefulWidget> createState() => _GalleryPageState(initialIndex);
 }
 
 class _GalleryPageState extends State<GalleryPage>{
 
-  var _currentPage = 0;
+  _GalleryPageState(this._currentPage);
+
+  var _currentPage;
 
   var _fullscreen = false;
 
