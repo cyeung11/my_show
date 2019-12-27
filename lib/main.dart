@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:my_show/model/tv_details.dart';
-import 'package:my_show/storage/database_helper.dart';
-import 'package:my_show/model/watch_progress.dart';
 import 'package:my_show/page/home_page.dart';
+import 'package:my_show/storage/database_helper.dart';
 import 'package:my_show/storage/pref_helper.dart';
 
 
@@ -20,8 +18,6 @@ void main(){
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
-
-  MyApp({@required this.pref, Key key}): super(key: key);
 
   @override
   Widget build(BuildContext context) {

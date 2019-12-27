@@ -16,7 +16,6 @@ import 'package:my_show/pageview_page/search_page_widget.dart';
 import 'package:my_show/pageview_page/setting_page_widget.dart';
 import 'package:my_show/pageview_page/trending_page_widget.dart';
 
-import '../main.dart';
 import '../storage/pref_helper.dart';
 
 class HomePage extends StatefulWidget{
@@ -178,7 +177,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
 
       try {
-        return await MyApp.methodHost.invokeMethod('backToExit');
+        return await platform.invokeMethod('backToExit');
       } on PlatformException catch (e) {
         print(e);
       }
