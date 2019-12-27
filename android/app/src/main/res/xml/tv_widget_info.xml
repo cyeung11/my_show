@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:initialLayout="@layout/tv_widget"
+    android:minHeight="200dp"
+    android:minWidth="160dp"
+    android:previewImage="@drawable/btn_add"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="60000"
+    android:widgetCategory="home_screen">
+</appwidget-provider>

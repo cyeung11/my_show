@@ -29,8 +29,6 @@ class HomePage extends StatefulWidget{
 
 class HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
-  static const platform = const MethodChannel('com.jkjk.my_show');
-
   var _currentItem = 0;
   PageController _pageController;
 

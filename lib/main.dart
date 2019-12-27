@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:my_show/model/tv_details.dart';
@@ -21,7 +23,34 @@ void main(){
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
 
-  MyApp({@required this.pref, Key key}): super(key: key);
+  static const methodHost = const MethodChannel('com.jkjk.my_show');
+  static const methodClient = const MethodChannel('com.jkjk.my_show.to_flutter');
+
+  MyApp({Key key}): super(key: key){
+    methodClient.setMethodCallHandler((call) async{
+      if (call.method == 'progressIncrement' && call.arguments is int) {
+        var tv = await TvDetails.getById(call.arguments);
+        if (tv != null) {
+          tv.progress.next(tv.seasons);
+          await tv.insert();
+          return true;
+        }
+      } else if (call.method == 'progressDecrement' && call.arguments is int) {
+        var tv = await TvDetails.getById(call.arguments);
+        if (tv != null) {
+          tv.progress.previous(tv.seasons);
+          await tv.insert();
+          return true;
+        }
+      } else if (call.method == 'getSavedTv') {
+        var tvs = await TvDetails.all();
+        if (tvs != null) {
+          return tvs.map((tv) => jsonEncode(tv.toDb())).toList().toString();
+        }
+      }
+      return null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="action_add_progress" translatable="false">action_add_progress</string>
+    <string name="action_reduce_progress" translatable="false">action_reduce_progress</string>
+
+
+    <string name="tv_widget_name">Saved TV</string>
+    <string name="error_text">Loading error</string>
+    <string name="loading">Loading…</string>
+</resources>
