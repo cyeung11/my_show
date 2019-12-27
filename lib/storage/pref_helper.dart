@@ -5,12 +5,9 @@ import 'package:my_show/model/movie_details.dart';
 import 'package:my_show/model/tv_details.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'model/genre.dart';
-import 'network/api_constant.dart';
-import 'network/network_call.dart';
-
-const String PREF_SAVED_MOVIE = "saved_movie";
-const String PREF_WATCH_TV = "watched_tv";
+import '../model/genre.dart';
+import '../network/api_constant.dart';
+import '../network/network_call.dart';
 
 const String PREF_TV_GENRE = "tv_genre";
 const String PREF_MOVIE_GENRE = "movie_genre";
@@ -18,16 +15,25 @@ const String PREF_MOVIE_GENRE = "movie_genre";
 const String PREF_DRIVE_USER_NAME = "drive_user_name";
 const String PREF_DRIVE_BACKUP_TIME = "drive_backup_time";
 
-class StorageHelper {
-  SharedPreferences pref;
+class PrefHelper {
+  SharedPreferences _pref;
+
+  static PrefHelper instance;
 
   Future<List<TvDetails>> get watchTv => TvDetails.all();
   Future<List<MovieDetails>> get savedMovie => MovieDetails.all();
   List<Genre> tvGenres;
   List<Genre> movieGenres;
 
-  StorageHelper(this.pref) {
-    tvGenres = getTvGenre();
+  static Future<void> init() async{
+    if (instance == null) {
+      var pref = await SharedPreferences.getInstance();
+      instance = PrefHelper(pref);
+    }
+  }
+
+  PrefHelper(this._pref) {
+    tvGenres = _getGenre(PREF_TV_GENRE);
     if (tvGenres.isEmpty) {
       getGenre(GET_TV_GENRE).then((data){
         if (data?.genres != null) {
@@ -35,7 +41,7 @@ class StorageHelper {
         }
       });
     }
-    movieGenres = getMovieGenre();
+    movieGenres = _getGenre(PREF_MOVIE_GENRE);
     if (movieGenres.isEmpty) {
       getGenre(GET_MOVIE_GENRE).then((data){
         if (data?.genres != null) {
@@ -87,46 +93,40 @@ class StorageHelper {
   }
   _saveGenre(List<Genre> genres, String key){
     List<String> toSave = genres.map((genre) => jsonEncode(genre)).toList();
-    pref.setStringList(key, toSave);
+    _pref.setStringList(key, toSave);
   }
 
   List<Genre> _getGenre(String key){
-    if (pref.containsKey(key)) {
-      List<String> savedList = pref.getStringList(key);
+    if (_pref.containsKey(key)) {
+      List<String> savedList = _pref.getStringList(key);
       return savedList.map((string) => Genre.fromMap(jsonDecode(string))).toList();
     } else {
       return List<Genre>();
     }
   }
-  List<Genre> getTvGenre(){
-    return _getGenre(PREF_TV_GENRE);
-  }
-  List<Genre> getMovieGenre(){
-    return _getGenre(PREF_MOVIE_GENRE);
-  }
 
   setString(String key, String value){
     if (value?.isNotEmpty == true) {
-      pref.setString(key, value);
+      _pref.setString(key, value);
     } else {
-      pref.remove(key);
+      _pref.remove(key);
     }
   }
 
   setInt(String key, int value){
     if (value != null) {
-      pref.setInt(key, value);
+      _pref.setInt(key, value);
     } else {
-      pref.remove(key);
+      _pref.remove(key);
     }
   }
 
   String getString(String key){
-    return pref.getString(key);
+    return _pref.getString(key);
   }
 
   int getInt(String key, {int defaultValue}){
-    return pref.getInt(key) ?? defaultValue;
+    return _pref.getInt(key) ?? defaultValue;
   }
 
 }

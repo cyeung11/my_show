@@ -1,7 +1,7 @@
 
 import 'dart:convert';
 
-import 'package:my_show/db/database_helper.dart';
+import 'package:my_show/storage/database_helper.dart';
 import 'package:my_show/model/details.dart';
 import 'package:my_show/model/episode.dart';
 import 'package:my_show/model/role.dart';

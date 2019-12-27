@@ -13,15 +13,13 @@ import 'package:my_show/widget/select_dialog.dart';
 import 'package:numberpicker/numberpicker.dart';
 
 import '../asset_path.dart';
-import '../show_storage_helper.dart';
+import '../storage/pref_helper.dart';
 
 class BrowsePageWidget extends StatefulWidget{
 
-  final StorageHelper _pref;
-
   final BrowsePageManager _pageManager;
 
-  BrowsePageWidget( this._pref, this._pageManager, {Key key}): super(key: key);
+  BrowsePageWidget(this._pageManager, {Key key}): super(key: key);
 
   @override
   State createState()  => _BrowsePageState();
@@ -340,7 +338,7 @@ class _BrowsePageState extends State<BrowsePageWidget> {
             barrierDismissible: true,
             builder: (context){
               return SelectDialog<Genre>(
-                selectables: widget._pageManager.isTv ? widget._pref.tvGenres : widget._pref.movieGenres,
+                selectables: widget._pageManager.isTv ? PrefHelper.instance.tvGenres : PrefHelper.instance.movieGenres,
                 currentSelect: widget._pageManager.genre,
               );
             }
@@ -475,7 +473,7 @@ class _BrowsePageState extends State<BrowsePageWidget> {
         Navigator.of(context).push(
             MaterialPageRoute(
                 builder: (BuildContext _) {
-                  return movie.isMovie() ? MovieDetailPage(id: movie.id, pref: widget._pref,) : TvDetailPage(id: movie.id, pref: widget._pref,);
+                  return movie.isMovie() ? MovieDetailPage(movie.id) : TvDetailPage(movie.id);
                 }
             )
         );

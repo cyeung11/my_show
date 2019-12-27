@@ -4,7 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:my_show/drive/drive_helper.dart';
 import 'package:my_show/model/movie_details.dart';
 import 'package:my_show/model/tv_details.dart';
-import 'package:my_show/show_storage_helper.dart';
+import 'package:my_show/storage/pref_helper.dart';
 
 class ShowBackupHelper{
   
@@ -16,21 +16,21 @@ class ShowBackupHelper{
     return await driveHelper.createFolder(FOLDER_NAME_BACKUP);
   }
   
-  static Future<bool> backup(GoogleSignInAccount acc, StorageHelper pref) async {
+  static Future<bool> backup(GoogleSignInAccount acc) async {
     var helper = await _assertInit(acc);
     var folderId = await _createFolder(helper);
 
-    var m = await pref.savedMovie;
+    var m = await PrefHelper.instance.savedMovie;
     var savedMovie = jsonEncode(m.map((movie) => jsonEncode(movie)).toList());
     var movieId = await helper.uploadStringAsFile(FILE_NAME_MOVIE, folderId, savedMovie);
 
-    var t = await pref.watchTv;
+    var t = await PrefHelper.instance.watchTv;
     var savedTv = jsonEncode(t.map((tv) => jsonEncode(tv)).toList());
     var tvId = await helper.uploadStringAsFile(FILE_NAME_TV, folderId, savedTv);
 
     var backedUp = movieId?.isNotEmpty == true && tvId?.isNotEmpty == true;
     if (backedUp) {
-      pref.setInt(PREF_DRIVE_BACKUP_TIME, DateTime.now().millisecondsSinceEpoch);
+      PrefHelper.instance.setInt(PREF_DRIVE_BACKUP_TIME, DateTime.now().millisecondsSinceEpoch);
     }
     return backedUp;
   }

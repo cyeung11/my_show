@@ -14,15 +14,12 @@ import 'package:my_show/pageview_page/page_manager/trending_page_manager.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import '../asset_path.dart';
-import '../show_storage_helper.dart';
 
 class TrendingPageWidget extends StatefulWidget{
 
-  final StorageHelper _pref;
-
   final TrendingPageManager _pageManager;
 
-  TrendingPageWidget(this._pref, this._pageManager, {Key key}): super(key: key);
+  TrendingPageWidget(this._pageManager, {Key key}): super(key: key);
 
   @override
   State createState()  => _TrendingPageState();
@@ -250,7 +247,7 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
                     MaterialPageRoute(
                         builder: (BuildContext _) {
                           var item = snapshot.data?.result[index];
-                          return item.isMovie() ? MovieDetailPage(id: item.id, pref: widget._pref,) : TvDetailPage(id: item.id, pref: widget._pref,);
+                          return item.isMovie() ? MovieDetailPage(item.id) : TvDetailPage(item.id);
                         }
                     )
                 );

@@ -16,14 +16,12 @@ import 'package:my_show/pageview_page/search_page_widget.dart';
 import 'package:my_show/pageview_page/setting_page_widget.dart';
 import 'package:my_show/pageview_page/trending_page_widget.dart';
 
-import '../show_storage_helper.dart';
+import '../main.dart';
+import '../storage/pref_helper.dart';
 
 class HomePage extends StatefulWidget{
-  final StorageHelper pref;
 
   final _authMan = AuthManager();
-
-  HomePage({@required this.pref, Key key}): super(key: key);
 
   @override
   State<StatefulWidget> createState() => HomePageState();
@@ -60,18 +58,12 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-//      if (_savedPageManager.needSave) {
-//        widget.pref.saveTv().whenComplete((){
-//          _savedPageManager.needSave = false;
-//        });
-//      }
-
-      if (widget.pref.getString(PREF_DRIVE_USER_NAME)?.isNotEmpty == true
-          && (DateTime.now().millisecondsSinceEpoch - widget.pref.getInt(PREF_DRIVE_BACKUP_TIME, defaultValue: 0)) > (6 * Duration.millisecondsPerHour)) {
+      if (PrefHelper.instance.getString(PREF_DRIVE_USER_NAME)?.isNotEmpty == true
+          && (DateTime.now().millisecondsSinceEpoch - PrefHelper.instance.getInt(PREF_DRIVE_BACKUP_TIME, defaultValue: 0)) > (6 * Duration.millisecondsPerHour)) {
         // Auto back if last back up is more than 6 hours old
         widget._authMan.getAccount(silently: true).then((acc) {
           if (acc != null) {
-            ShowBackupHelper.backup(acc, widget.pref);
+            ShowBackupHelper.backup(acc);
           }
         });
       }
@@ -102,19 +94,19 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget _page(BuildContext context, int index){
     switch (index) {
       case 0: {
-        return TrendingPageWidget(widget.pref, _trendingPageManager);
+        return TrendingPageWidget(_trendingPageManager);
       }
       case 1: {
-        return BrowsePageWidget(widget.pref, _browsePageManager);
+        return BrowsePageWidget(_browsePageManager);
       }
       case 2: {
-        return SearchPageWidget(widget.pref, _searchPageManager);
+        return SearchPageWidget(_searchPageManager);
       }
       case 3: {
-        return SavedPageWidget(widget.pref, _savedPageManager);
+        return SavedPageWidget(_savedPageManager);
       }
       default: {
-        return SettingPageWidget(widget.pref,_restore, widget._authMan);
+        return SettingPageWidget(_restore, widget._authMan);
       }
     }
   }
@@ -186,7 +178,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
       }
 
       try {
-        return await platform.invokeMethod('backToExit');
+        return await MyApp.methodHost.invokeMethod('backToExit');
       } on PlatformException catch (e) {
         print(e);
       }
@@ -212,7 +204,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
               child: Text('OK',
                 style: TextStyle(color: Colors.blueGrey),),
               onPressed: (){
-                widget.pref.restore(backup);
+                PrefHelper.instance.restore(backup);
                 Navigator.of(context).pop();
               },
             ),

@@ -16,15 +16,13 @@ import 'package:my_show/widget/DetailPhotoList.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import '../asset_path.dart';
-import '../show_storage_helper.dart';
+import '../storage/pref_helper.dart';
 import 'more_photo_page.dart';
 
 class MovieDetailPage extends StatefulWidget{
   final int id;
 
-  final StorageHelper pref;
-
-  MovieDetailPage({@required this.id,  @required this.pref, Key key}): super(key: key);
+  MovieDetailPage(this.id, {Key key}): super(key: key);
 
   @override
   State createState() => _MovieDetailPageState();
@@ -76,7 +74,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
   }
 
   _updateFav(){
-    widget.pref.isMovieSaved(widget.id).then((isFav){
+    PrefHelper.instance.isMovieSaved(widget.id).then((isFav){
       setState(() {
         _isFav = isFav;
       });
@@ -227,8 +225,8 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
                 icon: Icon(_isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
                 onPressed: (){
                   var future = _isFav
-                      ? widget.pref.removeMovie(widget.id)
-                      : widget.pref.addMovie(detail);
+                      ? PrefHelper.instance.removeMovie(widget.id)
+                      : PrefHelper.instance.addMovie(detail);
                   future.whenComplete((){
                     _updateFav();
                   });
@@ -654,7 +652,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
       onTap: (){
         Navigator.of(context).push(MaterialPageRoute(
             builder: (_){
-              return MovieDetailPage(id: show.id, pref: widget.pref,);
+              return MovieDetailPage(show.id);
             }
         ));
       },

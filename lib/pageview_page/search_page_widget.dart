@@ -9,15 +9,12 @@ import 'package:my_show/page/tv_details_page.dart';
 import 'package:my_show/pageview_page/page_manager/search_page_manager.dart';
 
 import '../asset_path.dart';
-import '../show_storage_helper.dart';
 
 class SearchPageWidget extends StatefulWidget{
 
-  final StorageHelper _pref;
-
   final SearchPageManager _pageManager;
 
-  SearchPageWidget( this._pref, this._pageManager, {Key key}): super(key: key);
+  SearchPageWidget(this._pageManager, {Key key}): super(key: key);
 
   @override
   State createState()  => _SearchPageState();
@@ -255,7 +252,7 @@ class _SearchPageState extends State<SearchPageWidget> {
         Navigator.of(context).push(
             MaterialPageRoute(
                 builder: (BuildContext _) {
-                  return movie.isMovie() ? MovieDetailPage(id: movie.id, pref: widget._pref,) : TvDetailPage(id: movie.id, pref: widget._pref,);
+                  return movie.isMovie() ? MovieDetailPage(movie.id) : TvDetailPage(movie.id);
                 }
             )
         );
