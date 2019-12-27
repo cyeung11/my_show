@@ -60,35 +60,50 @@ class _GalleryPageState extends State<GalleryPage>{
       ),
     ];
 
-    if (!_fullscreen) {
-      widgetList.add( Positioned(
+//    if (!_fullscreen) {
+
+    widgetList.add(Positioned(
         left: 12,
-        child:
-        SafeArea(
-          child: BackButton(color: Colors.white70,),
-        ),
-      ));
-      widgetList.add( Positioned(
+        child: AnimatedOpacity(
+          curve: Curves.easeIn,
+          opacity: _fullscreen ? 0 : 1,
+          duration: Duration(milliseconds: 200),
+          child:  SafeArea(
+            child: BackButton(color: Colors.white70,),
+          ),
+        )),
+    );
+    widgetList.add(Positioned(
         right: 20,
         bottom: 20,
-        child: Text('Credit: TMDb',
-          style: TextStyle(
-              color: Colors.white70
+        child: AnimatedOpacity(
+          curve: Curves.easeIn,
+          opacity: _fullscreen ? 0 : 1,
+          duration: Duration(milliseconds: 200),
+          child:  Text('Credit: TMDb',
+            style: TextStyle(
+                color: Colors.white70
+            ),
           ),
-        ),
-      ));
-    }
+        )),
+    );
 
-    if (!_fullscreen && widget.photoPaths.length > 1) {
+
+    if (widget.photoPaths.length > 1) {
       widgetList.add(Positioned(
-        left: 20,
-        bottom: 20,
-        child: Text('${_currentPage + 1}/${widget.photoPaths.length}',
-          style: TextStyle(
-              color: Colors.white70
-          ),
-        ),
-      ));
+          left: 20,
+          bottom: 20,
+          child: AnimatedOpacity(
+            curve: Curves.easeIn,
+            opacity: _fullscreen ? 0 : 1,
+            duration: Duration(milliseconds: 200),
+            child:  Text('${_currentPage + 1}/${widget.photoPaths.length}',
+              style: TextStyle(
+                  color: Colors.white70
+              ),
+            ),
+          )),
+      );
     }
 
     return Scaffold(

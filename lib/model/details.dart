@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:intl/intl.dart';
@@ -23,9 +24,9 @@ abstract class Details {
   double voteAverage;
 
   Details({this.backdropPath, this.genres, this.homePage, this.id, this.name,
-      this.originalName, this.overview, this.popularity,
-      this.posterPath, this.productionCompanies, this.status, this.voteCount,
-      this.voteAverage});
+    this.originalName, this.overview, this.popularity,
+    this.posterPath, this.productionCompanies, this.status, this.voteCount,
+    this.voteAverage});
 
 //  factory Details.fromJson(Map<String, dynamic> json) {
 //    return Details(
@@ -63,6 +64,28 @@ abstract class Details {
     }
     if (this.productionCompanies != null) {
       data['production_companies'] = this.productionCompanies.map((v) => v.toJson()).toList();
+    }
+    return data;
+  }
+
+  Map<String, dynamic> toDb() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['backdrop_path'] = this.backdropPath;
+    data['homepage'] = this.homePage;
+    data['id'] = this.id;
+    data['name'] = this.name;
+    data['original_name'] = this.originalName;
+    data['overview'] = this.overview;
+    data['popularity'] = this.popularity;
+    data['poster_path'] = this.posterPath;
+    data['status'] = this.status;
+    data['vote_average'] = this.voteAverage;
+    data['vote_count'] = this.voteCount;
+    if (this.genres != null) {
+      data['genres'] = this.genres.map((v) => jsonEncode(v.toJson())).toList().toString();
+    }
+    if (this.productionCompanies != null) {
+      data['production_companies'] = this.productionCompanies.map((v) => jsonEncode(v.toJson())).toList().toString();
     }
     return data;
   }

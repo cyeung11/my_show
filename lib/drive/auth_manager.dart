@@ -1,10 +1,6 @@
 import 'package:google_sign_in/google_sign_in.dart';
 
-
-
 class AuthManager {
-
-//  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: <String>[
@@ -14,27 +10,16 @@ class AuthManager {
     ],
   );
 
-  Future<GoogleSignInAccount> getAccount() async {
-    var account = await _signInSilently();
-    if (account == null) {
-      account = await _signIn();
+  GoogleSignInAccount _acc;
+
+  Future<GoogleSignInAccount> getAccount({bool silently = false}) async {
+    if (_acc == null) {
+      _acc = await _signInSilently();
+      if (_acc == null && !silently) {
+        _acc = await _signIn();
+      }
     }
-    return account;
-//    if (account != null) {
-//      final GoogleSignInAuthentication authentication = await account.authentication;
-
-//      final AuthCredential credential = GoogleAuthProvider.getCredential(
-//        accessToken: authentication.accessToken,
-//        idToken: authentication.idToken,
-//      );
-
-//      final AuthResult authResult = await _auth.signInWithCredential(credential);
-//      final FirebaseUser user = authResult.user;
-
-//      return await account.authHeaders;
-//    } else {
-//      return null;
-//    }
+    return _acc;
   }
 
   Future<GoogleSignInAccount> _signIn() async {
@@ -57,6 +42,7 @@ class AuthManager {
 
   Future<void> signOut() async {
     try {
+      _acc = null;
       _googleSignIn.signOut();
       _googleSignIn.disconnect();
     } catch (error) {

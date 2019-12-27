@@ -13,7 +13,7 @@ import '../show_storage_helper.dart';
 
 class SearchPageWidget extends StatefulWidget{
 
-  final ShowStorageHelper _pref;
+  final StorageHelper _pref;
 
   final SearchPageManager _pageManager;
 

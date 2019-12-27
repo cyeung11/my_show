@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:my_show/drive/auth_manager.dart';
+import 'package:my_show/drive/show_back_up_helper.dart';
 import 'package:my_show/pageview_page/browse_page_widget.dart';
 import 'package:my_show/pageview_page/page_manager/browse_page_manager.dart';
 import 'package:my_show/pageview_page/page_manager/saved_page_manager.dart';
@@ -16,7 +19,9 @@ import 'package:my_show/pageview_page/trending_page_widget.dart';
 import '../show_storage_helper.dart';
 
 class HomePage extends StatefulWidget{
-  final ShowStorageHelper pref;
+  final StorageHelper pref;
+
+  final _authMan = AuthManager();
 
   HomePage({@required this.pref, Key key}): super(key: key);
 
@@ -33,7 +38,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   // State holders
   SearchPageManager _searchPageManager = SearchPageManager();
-  SavedPageManager _savedPageManager;
+  SavedPageManager _savedPageManager = SavedPageManager();
   TrendingPageManager _trendingPageManager = TrendingPageManager();
   BrowsePageManager _browsePageManager = BrowsePageManager();
 
@@ -41,10 +46,9 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarBrightness: Brightness.dark),);
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarBrightness: Brightness.dark));
 
     _pageController = PageController();
-    _savedPageManager = SavedPageManager(widget.pref);
   }
 
   @override
@@ -56,7 +60,21 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-      _savedPageManager.saveToStorage();
+//      if (_savedPageManager.needSave) {
+//        widget.pref.saveTv().whenComplete((){
+//          _savedPageManager.needSave = false;
+//        });
+//      }
+
+      if (widget.pref.getString(PREF_DRIVE_USER_NAME)?.isNotEmpty == true
+          && (DateTime.now().millisecondsSinceEpoch - widget.pref.getInt(PREF_DRIVE_BACKUP_TIME, defaultValue: 0)) > (6 * Duration.millisecondsPerHour)) {
+        // Auto back if last back up is more than 6 hours old
+        widget._authMan.getAccount(silently: true).then((acc) {
+          if (acc != null) {
+            ShowBackupHelper.backup(acc, widget.pref);
+          }
+        });
+      }
     }
   }
 
@@ -96,7 +114,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         return SavedPageWidget(widget.pref, _savedPageManager);
       }
       default: {
-        return SettingPageWidget(widget.pref);
+        return SettingPageWidget(widget.pref,_restore, widget._authMan);
       }
     }
   }
@@ -110,7 +128,6 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         setState(() {
           _currentItem = index;
           _pageController.jumpToPage(_currentItem);
-//          _pageController.animateToPage(currentItem, duration: Duration(milliseconds: 300), curve: Curves.easeIn);
         });
       },
       items: [
@@ -150,23 +167,24 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
   /// return false to intercept the back press action
   Future<bool> onBackPress() async {
-    if (_currentItem == 0) {
-      if (_trendingPageManager.isMenuOverlay) {
-        setState(() {
-          _trendingPageManager.isMenuOverlay = false;
-        });
-        return Future.value(false);
-      }
-    } else if (_currentItem == 3) {
-      if (_savedPageManager.deleteMode) {
-        setState(() {
-          _savedPageManager.deleteMode = false;
-        });
-        return Future.value(false);
-      }
-    }
-
     if (Platform.isAndroid) {
+
+      if (_currentItem == 0) {
+        if (_trendingPageManager.isMenuOverlay) {
+          setState(() {
+            _trendingPageManager.isMenuOverlay = false;
+          });
+          return Future.value(false);
+        }
+      } else if (_currentItem == 3) {
+        if (_savedPageManager.deleteMode) {
+          setState(() {
+            _savedPageManager.deleteMode = false;
+          });
+          return Future.value(false);
+        }
+      }
+
       try {
         return await platform.invokeMethod('backToExit');
       } on PlatformException catch (e) {
@@ -175,5 +193,32 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
     }
 
     return Future.value(true);
+  }
+
+  _restore(GoogleSignInAccount acc){
+    ShowBackupHelper.restore(acc).then((backup){
+      showDialog(context: context, builder: (context) {
+        return AlertDialog(
+          title: Text('Backup Found!',),
+          content: Text('Do you want to restore from your backup?'),
+          actions: <Widget>[
+            FlatButton(
+              child: Text('Cancel'),
+              onPressed: (){
+                Navigator.of(context).pop();
+              },
+            ),
+            FlatButton(
+              child: Text('OK',
+                style: TextStyle(color: Colors.blueGrey),),
+              onPressed: (){
+                widget.pref.restore(backup);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      });
+    });
   }
 }

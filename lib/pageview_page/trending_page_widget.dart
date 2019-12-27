@@ -18,7 +18,7 @@ import '../show_storage_helper.dart';
 
 class TrendingPageWidget extends StatefulWidget{
 
-  final ShowStorageHelper _pref;
+  final StorageHelper _pref;
 
   final TrendingPageManager _pageManager;
 
@@ -323,7 +323,7 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
                 padding: EdgeInsets.all(10),
                 onPressed: () => _onMenuSelect(widget._pageManager.isTv ? TrendingType.TvToday : TrendingType.MoviePlaying),
                 icon: Icon(Icons.new_releases, size: 20, color: (widget._pageManager.currentType == TrendingType.TvToday || widget._pageManager.currentType == TrendingType.MoviePlaying) ? Colors.orangeAccent : Colors.white),
-                label: Text(widget._pageManager.isTv ? 'Airing' :'On Theatre',
+                label: Text(widget._pageManager.isTv ? 'Air Today' :'On Theatre',
                   style: TextStyle(color: (widget._pageManager.currentType == TrendingType.TvToday || widget._pageManager.currentType == TrendingType.MoviePlaying) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
                 ),
               ),

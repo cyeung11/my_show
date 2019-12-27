@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:my_show/dialog/episode_select_dialog.dart';
 import 'package:my_show/model/movie_details.dart';
 import 'package:my_show/model/tv_details.dart';
 import 'package:my_show/model/watch_progress.dart';
@@ -8,13 +7,14 @@ import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/page/movie_details_page.dart';
 import 'package:my_show/page/tv_details_page.dart';
 import 'package:my_show/pageview_page/page_manager/saved_page_manager.dart';
+import 'package:my_show/widget/episode_select_dialog.dart';
 
 import '../asset_path.dart';
 import '../show_storage_helper.dart';
 
 class SavedPageWidget extends StatefulWidget{
 
-  final ShowStorageHelper _pref;
+  final StorageHelper _pref;
 
   final SavedPageManager _pageManager;
 
@@ -28,10 +28,31 @@ class _SavedPageState extends State<SavedPageWidget> {
 
   ScrollController _scrollController;
 
+  List<TvDetails> savedTv;
+  List<MovieDetails> savedMovie;
+
   @override
   void initState() {
     super.initState();
+    _updateTv();
+    _updateMovie();
     _scrollController = ScrollController(initialScrollOffset: widget._pageManager.scrollOffsetToRestore);
+  }
+
+  _updateTv(){
+    widget._pref.watchTv.then((tvs){
+      setState(() {
+        savedTv = tvs;
+      });
+    });
+  }
+
+  _updateMovie(){
+    widget._pref.savedMovie.then((movies){
+      setState(() {
+        savedMovie = movies;
+      });
+    });
   }
 
   @override
@@ -52,6 +73,7 @@ class _SavedPageState extends State<SavedPageWidget> {
   @override
   dispose() {
     _scrollController.dispose();
+    widget._pageManager.deleteMode = false;
     super.dispose();
   }
   
@@ -90,7 +112,7 @@ class _SavedPageState extends State<SavedPageWidget> {
   }
 
   Widget _savedList(BuildContext context, bool isTv){
-    Map<int, dynamic> data = isTv ? widget._pref.watchTv.asMap() : widget._pref.savedMovie.asMap();
+    Map<int, dynamic> data = (isTv ? savedTv?.asMap() : savedMovie?.asMap()) ?? Map();
     if (data.isEmpty) {
       return Center(
         child: Text('Nothing yet :(',
@@ -107,7 +129,7 @@ class _SavedPageState extends State<SavedPageWidget> {
                 color: Colors.white30,
                 context: context,
                 tiles: data.keys.map((int index) {
-                  return isTv ? _tvEntry(context, data[index] as TvDetails, index) : _movieEntry(context, data[index] as MovieDetails, index);
+                  return isTv ? _tvEntry(context, data[index] as TvDetails) : _movieEntry(context, data[index] as MovieDetails);
                 })
             ).toList()
         ),
@@ -177,7 +199,7 @@ class _SavedPageState extends State<SavedPageWidget> {
         ));
   }
 
-  Widget _movieEntry(BuildContext context, MovieDetails movie, int indexInList){
+  Widget _movieEntry(BuildContext context, MovieDetails movie){
     List<Widget> widgetList = List<Widget>();
     widgetList.add(SizedBox(width: 12,));
     widgetList.add(_posterImage(context, false, movie.posterPath, movie.id));
@@ -207,20 +229,16 @@ class _SavedPageState extends State<SavedPageWidget> {
     return Builder(
       builder: (BuildContext context){
         return _dismissible(context, (_){
-          setState(() {
-            widget._pref.removeMovie(movie.id).whenComplete((){
-              widget._pageManager.needSave = false;
-            });
+          widget._pref.removeMovie(movie.id).whenComplete((){
+            _updateMovie();
           });
           Scaffold.of(context).showSnackBar(
               SnackBar(content: Text('Item removed'),
                 action: SnackBarAction(
                   label: 'Undo',
                   onPressed: () {
-                    setState(() {
-                      widget._pref.addMovie(movie, index: indexInList).whenComplete((){
-                        widget._pageManager.needSave = false;
-                      });
+                    widget._pref.addMovie(movie).whenComplete((){
+                      _updateMovie();
                     });
                   },
                 ),
@@ -231,7 +249,7 @@ class _SavedPageState extends State<SavedPageWidget> {
     );
   }
 
-  Widget _tvEntry(BuildContext context, TvDetails tv, int indexInList){
+  Widget _tvEntry(BuildContext context, TvDetails tv){
     List<Widget> widgetList = List<Widget>();
     widgetList.add(SizedBox(width: 12,));
     widgetList.add(_posterImage(context, true, tv.posterPath, tv.id));
@@ -262,20 +280,16 @@ class _SavedPageState extends State<SavedPageWidget> {
         builder: (BuildContext context) {
           return _dismissible(context,
                   (_) {
-                setState(() {
-                  widget._pref.removeTv(tv.id).whenComplete((){
-                    widget._pageManager.needSave = false;
-                  });
-                });
+                    widget._pref.removeTv(tv.id).whenComplete((){
+                      _updateTv();
+                    });
                 Scaffold.of(context).showSnackBar(
                     SnackBar(content: Text('Item removed'),
                       action: SnackBarAction(
                         label: 'Undo',
                         onPressed: () {
-                          setState(() {
-                            widget._pref.addTv(tv, index: indexInList).whenComplete((){
-                              widget._pageManager.needSave = false;
-                            });
+                          widget._pref.addTv(tv).whenComplete((){
+                            _updateTv();
                           });
                         },
                       ),
@@ -343,17 +357,15 @@ class _SavedPageState extends State<SavedPageWidget> {
                   style: TextStyle(color: Colors.redAccent),),
                 onPressed: (){
                   Navigator.of(context).pop();
-                  setState(() {
                     if (isTv) {
                       widget._pref.removeTv(id).whenComplete((){
-                        widget._pageManager.needSave = false;
+                        _updateTv();
                       });
                     } else {
                       widget._pref.removeMovie(id).whenComplete((){
-                        widget._pageManager.needSave = false;
+                        _updateMovie();
                       });
                     }
-                  });
                 },
               ),
             ],
@@ -376,7 +388,7 @@ class _SavedPageState extends State<SavedPageWidget> {
             : (){
           setState(() {
             tv.progress = tv.progress.next(tv.seasons);
-            widget._pageManager.needSave = true;
+            tv.insert();
           });
         },
       ));
@@ -408,7 +420,7 @@ class _SavedPageState extends State<SavedPageWidget> {
                 : (){
               setState(() {
                 tv.progress = tv.progress.previous(tv.seasons);
-                widget._pageManager.needSave = true;
+                tv.insert();
               });
             },
           )
@@ -430,7 +442,7 @@ class _SavedPageState extends State<SavedPageWidget> {
     ).then((progress){
       setState(() {
         tv.progress = progress;
-        widget._pageManager.needSave = true;
+        tv.insert();
       });
     });
   }

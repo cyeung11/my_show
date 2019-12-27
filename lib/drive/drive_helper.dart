@@ -1,10 +1,15 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
+import 'package:flutter/cupertino.dart';
 import 'package:googleapis/drive/v3.dart' as GoogleApis;
+import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 
 class DriveHelper {
+
+  static const FOLDER_MIME = 'application/vnd.google-apps.folder';
+  static const TEXT_MIME = 'text/plain';
+  static const ROOT_APP_FOLDER = 'appDataFolder';
 
   GoogleApis.DriveApi _drive;
 
@@ -12,39 +17,63 @@ class DriveHelper {
     _drive = GoogleApis.DriveApi(_GoogleHttpClient(authHeader));
   }
 
-  Future<String> createFolder(String folderName) async {
-    
+  Future<String> createFolder(String folderName, {String folderId}) async {
+    var existingFolder = await searchFile(folderName, mime: FOLDER_MIME);
+    if (existingFolder != null) {
+      return existingFolder.id;
+    }
+
+    GoogleApis.File file = GoogleApis.File();
+    file.name =  folderName;
+    file.parents = [folderId == null ? ROOT_APP_FOLDER : folderId];
+    file.mimeType = FOLDER_MIME;
+    var response = await _drive.files.create(file);
+    return response?.id;
   }
 
-  Future<String> uploadStringAsFile(String fileName, String content) async {
-    GoogleApis.File file = GoogleApis.File();
-    file.name =  fileName;
-    file.parents = ['appDataFolder'];
+  Future<String> uploadStringAsFile(String fileName, String folderId, String content) async {
+    var existingFile = await searchFile(fileName, mime: TEXT_MIME, folderId: folderId);
 
-    var existingId = await searchFile(fileName);
+    if (existingFile?.id != null) {
+      await _drive.files.delete(existingFile.id);
+    }
 
     var byteArray = utf8.encode(content);
-    var media = GoogleApis.Media(Stream.value(byteArray), byteArray.length, contentType: 'text/plain; charset=UTF-8');
+    var media = GoogleApis.Media(Stream.value(byteArray), byteArray.length, contentType: TEXT_MIME);
 
-    if (existingId != null) {
-      var response = await _drive.files.update(file, existingId, uploadMedia: media);
-      return response?.id;
-    } else {
-      var response = await _drive.files.create(file, uploadMedia: media);
-      return response?.id;
+    GoogleApis.File file = GoogleApis.File();
+    file.name =  fileName;
+    file.parents = [folderId];
+
+    var response = await _drive.files.create(file, uploadMedia: media);
+    return response?.id;
+  }
+
+  Future<GoogleApis.File> searchFile(String fileName, {String mime, String folderId}) async {
+    var query = StringBuffer();
+    query.write('name = \'$fileName\'');
+    if (mime != null) {
+      query.write(' and ');
+      query.write('mimeType = \'$mime\'');
     }
+    if (folderId != null) {
+      query.write(' and ');
+      query.write(' \'$folderId\' in parents');
+    }
+
+    var fileList = await _drive.files.list(spaces: ROOT_APP_FOLDER, q: query.toString());
+    return fileList.files?.isEmpty == true ? null : fileList.files.first;
   }
 
-  Future<String> searchFile(String fileName) async {
-    var fileList = await _drive.files.list(spaces: 'appDataFolder');
-    return fileList.files.firstWhere((file) => file.name == fileName, orElse: () => null)?.id;
-  }
-
-  Future<String> downloadFileAsString(String fileId) async {
+  downloadFileAsString(String fileId, ValueChanged<String> onDownload) async {
     GoogleApis.Media file = await _drive.files
         .get(fileId, downloadOptions: GoogleApis.DownloadOptions.FullMedia);
-    var bytes = await file.stream.first;
-    return Utf8Decoder().convert(bytes);
+    var data = List<int>();
+    file.stream.listen((d){
+      data.addAll(d);
+    }, onDone: (){
+      onDownload(Utf8Decoder().convert(data));
+    });
   }
 }
 

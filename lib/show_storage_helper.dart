@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:my_show/drive/show_back_up_helper.dart';
 import 'package:my_show/model/movie_details.dart';
 import 'package:my_show/model/tv_details.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,33 +11,22 @@ import 'network/network_call.dart';
 
 const String PREF_SAVED_MOVIE = "saved_movie";
 const String PREF_WATCH_TV = "watched_tv";
+
 const String PREF_TV_GENRE = "tv_genre";
 const String PREF_MOVIE_GENRE = "movie_genre";
-const String PREF_DRIVE_USER_NAME = "drive_user_name";
 
-class ShowStorageHelper {
+const String PREF_DRIVE_USER_NAME = "drive_user_name";
+const String PREF_DRIVE_BACKUP_TIME = "drive_backup_time";
+
+class StorageHelper {
   SharedPreferences pref;
 
-  List<TvDetails> watchTv;
-  List<MovieDetails> savedMovie;
+  Future<List<TvDetails>> get watchTv => TvDetails.all();
+  Future<List<MovieDetails>> get savedMovie => MovieDetails.all();
   List<Genre> tvGenres;
   List<Genre> movieGenres;
 
-  ShowStorageHelper(this.pref) {
-    if (pref.containsKey(PREF_SAVED_MOVIE)) {
-      List<String> savedList = pref.getStringList(PREF_SAVED_MOVIE);
-      savedMovie = savedList.map((string) => MovieDetails.fromJson(jsonDecode(string))).toList();
-    } else {
-      savedMovie = List<MovieDetails>();
-    }
-
-    if (pref.containsKey(PREF_WATCH_TV)) {
-      List<String> savedList = pref.getStringList(PREF_WATCH_TV);
-      watchTv = savedList.map((string) => TvDetails.fromJson(jsonDecode(string))).toList();
-    } else {
-      watchTv = List<TvDetails>();
-    }
-
+  StorageHelper(this.pref) {
     tvGenres = getTvGenre();
     if (tvGenres.isEmpty) {
       getGenre(GET_TV_GENRE).then((data){
@@ -55,59 +45,36 @@ class ShowStorageHelper {
     }
   }
 
-  Future<bool> addMovie(MovieDetails newMovie, {int index = -1}){
-    if (!isMovieSaved(newMovie.id)) {
-      if (index != -1 && index < watchTv.length) {
-        savedMovie.insert(index, newMovie);
-      } else {
-        savedMovie.add(newMovie);
-      }
-      return saveMovies();
+  restore(Backup backup) {
+    if (backup.movies != null) {
+      MovieDetails.insertAll(backup.movies);
     }
-    return Future.value(false);
-  }
-
-  Future<bool> removeMovie(int movieId){
-    savedMovie.removeWhere((saved){
-      return saved.id == movieId;
-    });
-    return saveMovies();
-  }
-
-  Future<bool> addTv(TvDetails newTv, {int index = -1}){
-    if (!isTvSaved(newTv.id)) {
-      if (index != -1 && index < watchTv.length) {
-        watchTv.insert(index, newTv);
-      } else {
-        watchTv.add(newTv);
-      }
-      return saveTv();
+    if (backup.tv != null) {
+      TvDetails.insertAll(backup.tv);
     }
-    return Future.value(false);
   }
 
-  Future<bool> removeTv(int tvId){
-    watchTv.removeWhere((saved){
-      return saved.id == tvId;
-    });
-    return saveTv();
+  Future<void> addMovie(MovieDetails newMovie){
+    return newMovie.insert();
   }
 
-  bool isMovieSaved(int movieId) {
-    return savedMovie.firstWhere((saved) => saved.id == movieId, orElse: () => null) != null;
-  }
-  bool isTvSaved(int tvId) {
-    return watchTv.firstWhere((saved) => saved.id == tvId, orElse: () => null) != null;
+  Future<void> removeMovie(int movieId){
+    return MovieDetails.delete(movieId);
   }
 
-  Future<bool> saveTv() {
-    List<String> toSave = watchTv.map((tv) => jsonEncode(tv)).toList();
-    return pref.setStringList(PREF_WATCH_TV, toSave);
+  Future<void> addTv(TvDetails newTv){
+    return newTv.insert();
   }
 
-  Future<bool> saveMovies() {
-    List<String> toSave = savedMovie.map((movie) => jsonEncode(movie)).toList();
-    return pref.setStringList(PREF_SAVED_MOVIE, toSave);
+  Future<void> removeTv(int tvId){
+    return TvDetails.delete(tvId);
+  }
+
+  Future<bool> isMovieSaved(int movieId) async {
+    return await MovieDetails.getById(movieId) != null;
+  }
+  Future<bool> isTvSaved(int tvId) async {
+    return await TvDetails.getById(tvId) != null;
   }
 
   saveTVGenre(List<Genre> genres){
@@ -138,7 +105,7 @@ class ShowStorageHelper {
     return _getGenre(PREF_MOVIE_GENRE);
   }
 
-  setValue(String key, String value){
+  setString(String key, String value){
     if (value?.isNotEmpty == true) {
       pref.setString(key, value);
     } else {
@@ -146,8 +113,20 @@ class ShowStorageHelper {
     }
   }
 
+  setInt(String key, int value){
+    if (value != null) {
+      pref.setInt(key, value);
+    } else {
+      pref.remove(key);
+    }
+  }
+
   String getString(String key){
     return pref.getString(key);
+  }
+
+  int getInt(String key, {int defaultValue}){
+    return pref.getInt(key) ?? defaultValue;
   }
 
 }

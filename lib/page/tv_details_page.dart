@@ -9,6 +9,7 @@ import 'package:my_show/model/tv_details.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/credit_response.dart';
+import 'package:my_show/widget/DetailPhotoList.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import '../asset_path.dart';
@@ -19,7 +20,7 @@ import 'gallery_page.dart';
 class TvDetailPage extends StatefulWidget{
   final int id;
 
-  final ShowStorageHelper pref;
+  final StorageHelper pref;
 
   TvDetailPage({@required this.id, @required this.pref, Key key}): super(key: key);
 
@@ -30,14 +31,18 @@ class TvDetailPage extends StatefulWidget{
 class _TvPageState extends State<TvDetailPage>{
 
   Future<TvDetails> _details;
+  TvDetails _cache;
 
   CreditResponse _credit;
   List<Show> _similar;
   List<String> _images;
 
+  var _isFav = false;
+
   @override
   void initState() {
     super.initState();
+    _updateFav();
     if (_credit == null) {
       getCredit(true, widget.id).then((response){
         if (response?.cast?.isNotEmpty == true) {
@@ -67,6 +72,14 @@ class _TvPageState extends State<TvDetailPage>{
     }
   }
 
+  _updateFav(){
+    widget.pref.isTvSaved(widget.id).then((isFav){
+      setState(() {
+        _isFav = isFav;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_details == null) {
@@ -78,7 +91,11 @@ class _TvPageState extends State<TvDetailPage>{
       body: FutureBuilder<TvDetails>(
         future: _details,
         builder: (context, snapshot){
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState != ConnectionState.waiting && snapshot.data != null) {
+            return _buildDetails(snapshot.data);
+          } else if (_cache != null) {
+            return _buildDetails(_cache);
+          } else if (snapshot.connectionState == ConnectionState.waiting) {
             return SafeArea(
               child: Container(
                 constraints: BoxConstraints.expand(),
@@ -94,7 +111,7 @@ class _TvPageState extends State<TvDetailPage>{
                 ),
               ),
             );
-          } else if (snapshot.data == null) {
+          } else {
             return SafeArea(
               child:  Container(
                 constraints: BoxConstraints.expand(),
@@ -117,8 +134,6 @@ class _TvPageState extends State<TvDetailPage>{
                 ),
               ),
             );
-          } else {
-            return _buildDetails(snapshot.data);
           }
         },
       ),
@@ -133,7 +148,6 @@ class _TvPageState extends State<TvDetailPage>{
     var posterTopSpace = backdropHeight * 0.5;
     var headerHeight = posterTopSpace + posterHeight;
 
-    var isFav = widget.pref.isTvSaved(widget.id);
 
     return SizedBox(
       height: headerHeight,
@@ -208,14 +222,17 @@ class _TvPageState extends State<TvDetailPage>{
             right: 5,
             child: SafeArea(
               child:  IconButton(
-                icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
+                icon: Icon(_isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
                 onPressed: (){
-                  var future = isFav
-                      ? widget.pref.removeTv(widget.id)
-                      : widget.pref.addTv(tv);
-                  future.whenComplete((){
-                    setState(() {});
-                  });
+                  if (_isFav) {
+                    widget.pref.removeTv(widget.id).then((_){
+                      _updateFav();
+                    });
+                  } else {
+                    widget.pref.addTv(tv).then((_){
+                      _updateFav();
+                    });
+                  }
                 },
               ),
             ),
@@ -516,24 +533,19 @@ class _TvPageState extends State<TvDetailPage>{
       ));
 
       listChild.add(Container(
-        height: 150,
-        child: ListView.builder(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            itemCount: min(5, _images.length),
-            scrollDirection: Axis.horizontal,
-            itemBuilder: (context, index){
-              return _photoBox(context, index);
-            }
-        ),
+        height: 120,
+        margin: EdgeInsets.symmetric(vertical: 10),
+        child: DetailPhotoList(_images, min(3, _images.length), 200, 120),
       ));
     }
 
     listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
 
     listChild.add(InkWell(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: <Widget>[
-          SizedBox(width: 16,),
           Image.asset(BTN_GOOGLE, width: 30, height: 30,),
           SizedBox(width: 10,),
           Text('Search in Web',
@@ -543,25 +555,26 @@ class _TvPageState extends State<TvDetailPage>{
               )),
         ],
       ),
+      ),
       onTap: (){
         Details.searchInGoogle((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
       },
     ));
 
-    listChild.add(SizedBox(height: 15,));
-
     listChild.add(InkWell(
-      child: Row(
-        children: <Widget>[
-          SizedBox(width: 16,),
-          Image.asset(BTN_YOUTUBE, width: 30, height: 30,),
-          SizedBox(width: 10,),
-          Text('Search in YouTube',
-              style: TextStyle(
-                fontSize: 16.0,
-                color: Colors.white,
-              )),
-        ],
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: <Widget>[
+            Image.asset(BTN_YOUTUBE, width: 30, height: 30,),
+            SizedBox(width: 10,),
+            Text('Search in YouTube',
+                style: TextStyle(
+                  fontSize: 16.0,
+                  color: Colors.white,
+                )),
+          ],
+        ),
       ),
       onTap: (){
         Details.searchInYoutube((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
@@ -626,26 +639,6 @@ class _TvPageState extends State<TvDetailPage>{
     );
   }
 
-  _photoBox(BuildContext context, int index) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 5, vertical: 10),
-      width: 200, height: 150,
-      child: GestureDetector(
-        child: CachedNetworkImage(imageUrl: BACKDROP_IMAGE_PREFIX + (_images[index]),
-            fit: BoxFit.cover,
-            placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
-            height: 150, width: 200),
-        onTap: (){
-          Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) {
-                return GalleryPage(_images, initialIndex: index,);
-              }
-          ));
-        },
-      ),
-    );
-  }
-
   _similarBox(BuildContext context, Show show) {
     return GestureDetector(
       child: Container(
@@ -693,6 +686,12 @@ class _TvPageState extends State<TvDetailPage>{
   }
 
   _loadData(BuildContext context){
+    TvDetails.getById(widget.id).then((tv){
+      setState(() {
+        _cache = tv;
+      });
+    });
+
     _details = getTVDetail(widget.id).then((data) {
       if (data == null) {
         _showRetrySnackbar(context);

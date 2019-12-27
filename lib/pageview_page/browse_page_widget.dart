@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:my_show/dialog/select_dialog.dart';
 import 'package:my_show/model/genre.dart';
 import 'package:my_show/model/show.dart';
 import 'package:my_show/model/sort.dart';
@@ -10,6 +9,7 @@ import 'package:my_show/network/response/movie_list_response.dart';
 import 'package:my_show/page/movie_details_page.dart';
 import 'package:my_show/page/tv_details_page.dart';
 import 'package:my_show/pageview_page/page_manager/browse_page_manager.dart';
+import 'package:my_show/widget/select_dialog.dart';
 import 'package:numberpicker/numberpicker.dart';
 
 import '../asset_path.dart';
@@ -17,7 +17,7 @@ import '../show_storage_helper.dart';
 
 class BrowsePageWidget extends StatefulWidget{
 
-  final ShowStorageHelper _pref;
+  final StorageHelper _pref;
 
   final BrowsePageManager _pageManager;
 

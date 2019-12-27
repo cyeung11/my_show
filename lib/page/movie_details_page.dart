@@ -12,15 +12,17 @@ import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/credit_response.dart';
 import 'package:my_show/page/crew_page.dart';
 import 'package:my_show/page/gallery_page.dart';
+import 'package:my_show/widget/DetailPhotoList.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import '../asset_path.dart';
 import '../show_storage_helper.dart';
+import 'more_photo_page.dart';
 
 class MovieDetailPage extends StatefulWidget{
   final int id;
 
-  final ShowStorageHelper pref;
+  final StorageHelper pref;
 
   MovieDetailPage({@required this.id,  @required this.pref, Key key}): super(key: key);
 
@@ -31,14 +33,18 @@ class MovieDetailPage extends StatefulWidget{
 class _MovieDetailPageState extends State<MovieDetailPage>{
 
   Future<MovieDetails> _details;
+  MovieDetails _cache;
 
   CreditResponse _credit;
   List<Show> _similar;
   List<String> _images;
 
+  var _isFav = false;
+
   @override
   void initState() {
     super.initState();
+    _updateFav();
     if (_credit == null) {
       getCredit(false, widget.id).then((response){
         if (response != null) {
@@ -69,6 +75,14 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
     }
   }
 
+  _updateFav(){
+    widget.pref.isMovieSaved(widget.id).then((isFav){
+      setState(() {
+        _isFav = isFav;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_details == null) {
@@ -80,47 +94,49 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
       FutureBuilder<MovieDetails>(
         future: _details,
         builder: (context, snapshot){
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState != ConnectionState.waiting && snapshot.data != null) {
+            return _buildDetails(snapshot.data);
+          } else if (_cache != null) {
+            return _buildDetails(_cache);
+          } else if (snapshot.connectionState == ConnectionState.waiting) {
             return SafeArea(
-               child: Container(
-              constraints: BoxConstraints.expand(),
-              child: Stack(
-                alignment: Alignment.center,
-                children: <Widget>[
-                  Positioned(
-                    top: 5, left: 5,
-                    child: BackButton(color: Colors.white,),
-                  ),
-                  CircularProgressIndicator()
-                ],
-              ),
-              ),
-            );
-          } else if (snapshot.data == null) {
-            return SafeArea(
-                child: Container(
-              constraints: BoxConstraints.expand(),
-              child: Stack(
-                alignment: Alignment.center,
-                children: <Widget>[
-                  Positioned(
-                    top: 5, left: 5,
-                    child: BackButton(color: Colors.white,),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.refresh, color: Colors.white, size: 50,),
-                    onPressed: (){
-                      setState(() {
-                        _loadData(context);
-                      });
-                    },
-                  )
-                ],
-              ),
+              child: Container(
+                constraints: BoxConstraints.expand(),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    Positioned(
+                      top: 5, left: 5,
+                      child: BackButton(color: Colors.white,),
+                    ),
+                    CircularProgressIndicator()
+                  ],
+                ),
               ),
             );
           } else {
-            return _buildDetails(snapshot.data);
+            return SafeArea(
+              child: Container(
+                constraints: BoxConstraints.expand(),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    Positioned(
+                      top: 5, left: 5,
+                      child: BackButton(color: Colors.white,),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.refresh, color: Colors.white, size: 50,),
+                      onPressed: (){
+                        setState(() {
+                          _loadData(context);
+                        });
+                      },
+                    )
+                  ],
+                ),
+              ),
+            );
           }
         },
       ),
@@ -134,8 +150,6 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
     var backdropHeight = screenWidth / 1.78;
     var posterTopSpace = backdropHeight * 0.5;
     var headerHeight = posterTopSpace + posterHeight;
-
-    var isFav = widget.pref.isMovieSaved(widget.id);
 
     return SizedBox(
       height: headerHeight,
@@ -200,27 +214,27 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
             top: 5,
             left: 5,
             child: SafeArea(
-            child: BackButton(
-              color: Colors.white,
-            ),
+              child: BackButton(
+                color: Colors.white,
+              ),
             ),
           ),
           Positioned(
             top: 5,
             right: 5,
             child: SafeArea(
-            child:  IconButton(
-              icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
-              onPressed: (){
-                var future = isFav
-                    ? widget.pref.removeMovie(widget.id)
-                    : widget.pref.addMovie(detail);
-                future.whenComplete((){
-                  setState(() {});
-                });
-              },
+              child:  IconButton(
+                icon: Icon(_isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
+                onPressed: (){
+                  var future = _isFav
+                      ? widget.pref.removeMovie(widget.id)
+                      : widget.pref.addMovie(detail);
+                  future.whenComplete((){
+                    _updateFav();
+                  });
+                },
+              ),
             ),
-          ),
           ),
         ],
       ),
@@ -361,7 +375,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
       listChild.add(Container(
         height: 250,
         child: ListView.builder(
-          padding: EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: 16),
             itemCount: _credit.cast.length,
             scrollDirection: Axis.horizontal,
             itemBuilder: (context, index){
@@ -374,33 +388,33 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
 
     if (_credit?.crew?.isNotEmpty == true) {
       listChild.add(Padding(
-        padding: EdgeInsets.only(left: 16, right: 16, top: 10),
-        child: Row(
-          children: <Widget>[
-            Expanded(
-              child: Text('Crew',
-                  style: TextStyle(
-                    fontSize: 20.0,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  )),
-            ),
-            InkWell(
-              child: Text('see all',
-                  style: TextStyle(
-                    fontSize: 14.0,
-                    color: Colors.blueGrey,
-                  )),
-              onTap: (){
-                Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_){
-                    return CrewPage(crews: _credit.crew, name: (detail.name ?? detail.originalName));
-                  }
-                ));
-              },
-            )
-          ],
-        )
+          padding: EdgeInsets.only(left: 16, right: 16, top: 10),
+          child: Row(
+            children: <Widget>[
+              Expanded(
+                child: Text('Crew',
+                    style: TextStyle(
+                      fontSize: 20.0,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    )),
+              ),
+              InkWell(
+                child: Text('see all',
+                    style: TextStyle(
+                      fontSize: 14.0,
+                      color: Colors.blueGrey,
+                    )),
+                onTap: (){
+                  Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_){
+                        return CrewPage(crews: _credit.crew, name: (detail.name ?? detail.originalName));
+                      }
+                  ));
+                },
+              )
+            ],
+          )
       ));
 
       var directors = _credit.crew.where((person) => person.job?.trim()?.toLowerCase() == 'director').toList();
@@ -433,24 +447,24 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
 
       if ((detail.budget ?? 0) != 0) {
         listChild.add(Padding(
-                padding: EdgeInsets.only(left: 20, right: 20, top: 10),
-                child: Text('Budget: \$${numFormat.format(detail.budget)}',
-                    style: TextStyle(
-                      fontSize: 16.0,
-                      color: Colors.grey,
-                    )),
-              ));
+          padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+          child: Text('Budget: \$${numFormat.format(detail.budget)}',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: Colors.grey,
+              )),
+        ));
       }
 
       if ((detail.revenue ?? 0) != 0) {
         listChild.add(Padding(
-                padding: EdgeInsets.only(left: 20, right: 20, top: 10),
-                child: Text('Revenue: \$${numFormat.format(detail.revenue)}',
-                    style: TextStyle(
-                      fontSize: 16.0,
-                      color: Colors.grey,
-                    )),
-              ));
+          padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+          child: Text('Revenue: \$${numFormat.format(detail.revenue)}',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: Colors.grey,
+              )),
+        ));
       }
     }
 
@@ -478,7 +492,7 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
                 onTap: (){
                   Navigator.of(context).push(MaterialPageRoute(
                       builder: (_){
-                        return GalleryPage(_images);
+                        return MorePhotoPage(_images);
                       }
                   ));
                 },
@@ -488,52 +502,49 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
       ));
 
       listChild.add(Container(
-        height: 150,
-        child: ListView.builder(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            itemCount: min(5, _images.length),
-            scrollDirection: Axis.horizontal,
-            itemBuilder: (context, index){
-              return _photoBox(context, index);
-            }
-        ),
+        height: 120,
+        margin: EdgeInsets.symmetric(vertical: 10),
+        child: DetailPhotoList(_images, min(3, _images.length), 200, 120),
       ));
     }
 
     listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
 
     listChild.add(InkWell(
-      child: Row(
-        children: <Widget>[
-          SizedBox(width: 16,),
-          Image.asset(BTN_GOOGLE, width: 30, height: 30,),
-          SizedBox(width: 10,),
-          Text('Search in Web',
-              style: TextStyle(
-                fontSize: 16.0,
-                color: Colors.white,
-              )),
-        ],
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: <Widget>[
+            Image.asset(BTN_GOOGLE, width: 30, height: 30,),
+            SizedBox(width: 10,),
+            Text('Search in Web',
+                style: TextStyle(
+                  fontSize: 16.0,
+                  color: Colors.white,
+                )),
+          ],
+        ),
       ),
       onTap: (){
         Details.searchInGoogle((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
       },
     ));
 
-    listChild.add(SizedBox(height: 15,));
 
     listChild.add(InkWell(
-      child: Row(
-        children: <Widget>[
-          SizedBox(width: 16,),
-          Image.asset(BTN_YOUTUBE, width: 30, height: 30,),
-          SizedBox(width: 10,),
-          Text('Search in YouTube',
-              style: TextStyle(
-                fontSize: 16.0,
-                color: Colors.white,
-              )),
-        ],
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: <Widget>[
+            Image.asset(BTN_YOUTUBE, width: 30, height: 30,),
+            SizedBox(width: 10,),
+            Text('Search in YouTube',
+                style: TextStyle(
+                  fontSize: 16.0,
+                  color: Colors.white,
+                )),
+          ],
+        ),
       ),
       onTap: (){
         Details.searchInYoutube((detail.name?.isNotEmpty == true ? detail.name : detail.originalName) ?? '');
@@ -541,19 +552,20 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
     ));
 
     if (detail.imdbId?.isNotEmpty == true) {
-      listChild.add(SizedBox(height: 15,));
       listChild.add(InkWell(
-        child: Row(
-          children: <Widget>[
-            SizedBox(width: 16,),
-            Image.asset(BTN_IMDB, width: 30, height: 30,),
-            SizedBox(width: 10,),
-            Text('View in IMDb',
-                style: TextStyle(
-                  fontSize: 16.0,
-                  color: Colors.white,
-                )),
-          ],
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: <Widget>[
+              Image.asset(BTN_IMDB, width: 30, height: 30,),
+              SizedBox(width: 10,),
+              Text('View in IMDb',
+                  style: TextStyle(
+                    fontSize: 16.0,
+                    color: Colors.white,
+                  )),
+            ],
+          ),
         ),
         onTap: (){
           Details.viewInImdb(detail.imdbId);
@@ -619,26 +631,6 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
     );
   }
 
-  _photoBox(BuildContext context, int index) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 5, vertical: 10),
-      width: 200, height: 150,
-      child: GestureDetector(
-        child: CachedNetworkImage(imageUrl: BACKDROP_IMAGE_PREFIX + (_images[index]),
-            fit: BoxFit.cover,
-            placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
-            height: 150, width: 200),
-        onTap: (){
-          Navigator.of(context).push(MaterialPageRoute(
-              builder: (_) {
-                return GalleryPage(_images, initialIndex: index,);
-              }
-          ));
-        },
-      ),
-    );
-  }
-
   _similarBox(BuildContext context, Show show) {
     return GestureDetector(
       child: Container(
@@ -685,6 +677,12 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
   }
 
   _loadData(BuildContext context){
+    MovieDetails.getById(widget.id).then((m){
+      setState(() {
+        _cache = m;
+      });
+    });
+
     _details = getMovieDetail(widget.id).then((data) {
       if (data == null) {
         _showRetrySnackbar(context);
