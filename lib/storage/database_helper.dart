@@ -50,7 +50,8 @@ class DatabaseHelper {
       'next_episode_to_air TEXT,'
       'origin_country TEXT,'
       'seasons TEXT,'
-      'progress TEXT';
+      'progress TEXT,'
+      'savedTime INTEGER';
 
   static const movieTableColumn =  'id INTEGER PRIMARY KEY,'
       'backdrop_path TEXT,'
@@ -74,5 +75,6 @@ class DatabaseHelper {
       'imdb_id TEXT,'
       'tagline TEXT,'
       'adult REAL DEFAULT false,'
-      'video REAL DEFAULT false';
+      'video REAL DEFAULT false,'
+      'savedTime INTEGER';
 }

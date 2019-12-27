@@ -34,9 +34,9 @@ class TvDetails extends Details {
     TvDetails({String backdropPath, this.createdBy, this.episodeRunTime, this.firstAirDate, List<Genre> genres, String homePage, int id, this.inProduction,
         this.languages, this.lastAirDate, this.lastEpisodeAir, String name, this.networks, this.nextEpisodeAir, this.noEpisodes, this.noSeasons,
         this.originCountry, this.originalLanguage, String originalName, String overview, double popularity, String posterPath, List<Role> productionCompanies,
-        this.seasons, String status, this.type, double voteAverage, int voteCount, this.progress}
+        this.seasons, String status, this.type, double voteAverage, int voteCount, this.progress, int savedTime}
         ) : super(backdropPath: backdropPath, genres: genres, homePage: homePage, id: id, name: name, originalName: originalName, overview: overview, popularity: popularity,
-        posterPath: posterPath, productionCompanies: productionCompanies, status: status, voteAverage: voteAverage, voteCount: voteCount){
+        posterPath: posterPath, productionCompanies: productionCompanies, status: status, voteAverage: voteAverage, voteCount: voteCount, savedTime: savedTime){
         seasons.sort((s1, s2) => s1.seasonNo.compareTo(s2.seasonNo));
     }
 
@@ -144,6 +144,7 @@ class TvDetails extends Details {
             voteAverage: json['vote_average'],
             voteCount: json['vote_count'],
             progress: json['progress'] != null ? WatchProgress.fromMap(jsonDecode(json['progress'])) : WatchProgress(1, 1, 1),
+            savedTime: json['savedTime']
         );
     }
 
@@ -187,6 +188,7 @@ class TvDetails extends Details {
     }
 
     Future<void> insert() async {
+        savedTime = DateTime.now().millisecondsSinceEpoch;
         await DatabaseHelper.db.insert(
             DatabaseHelper.TABLE_TV,
             toDbMap(),
@@ -205,6 +207,7 @@ class TvDetails extends Details {
     static Future<void> insertAll(List<TvDetails> data) async {
         await DatabaseHelper.db.transaction((t) async {
             data.forEach((m) async {
+                m.savedTime = DateTime.now().millisecondsSinceEpoch;
                 await t.insert(
                     DatabaseHelper.TABLE_TV, m.toDbMap(),
                     conflictAlgorithm: ConflictAlgorithm.replace);

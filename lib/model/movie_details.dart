@@ -24,10 +24,10 @@ class MovieDetails extends Details {
   MovieDetails({this.adult, String backdropPath, this.budget, List<Genre> genres, String homePage,
     int id, this.imdbId, this.language, String originalTitle, String overview, double popularity, String posterPath,
     List<Role> productionCompanies, this.country, this.release, this.revenue, this.runtime, this.spokenLanguages,
-    String status, this.tagline, String title, this.video, double voteAverage, int voteCount}
+    String status, this.tagline, String title, this.video, double voteAverage, int voteCount, int savedTime}
       ) : super(backdropPath: backdropPath, genres: genres, homePage: homePage, id: id, originalName: originalTitle,
       overview: overview, popularity: popularity, posterPath: posterPath, productionCompanies: productionCompanies,
-      status: status, name: title, voteAverage: voteAverage, voteCount: voteCount);
+      status: status, name: title, voteAverage: voteAverage, voteCount: voteCount, savedTime: savedTime);
 
   factory MovieDetails.fromJson(Map<String, dynamic> json) {
     return MovieDetails(
@@ -107,6 +107,7 @@ class MovieDetails extends Details {
       video: json['video'],
       voteAverage: json['vote_average'],
       voteCount: json['vote_count'],
+      savedTime: json['savedTime']
     );
   }
 
@@ -134,6 +135,7 @@ class MovieDetails extends Details {
   }
 
   Future<void> insert() async {
+    savedTime = DateTime.now().millisecondsSinceEpoch;
     await DatabaseHelper.db.insert(
       DatabaseHelper.TABLE_MOVIE,
       toDbMap(),
@@ -144,6 +146,7 @@ class MovieDetails extends Details {
   static Future<void> insertAll(List<MovieDetails> data) async {
     await DatabaseHelper.db.transaction((t) async {
       data.forEach((m) async {
+        m.savedTime = DateTime.now().millisecondsSinceEpoch;
         await t.insert(
             DatabaseHelper.TABLE_MOVIE, m.toDbMap(),
             conflictAlgorithm: ConflictAlgorithm.replace);

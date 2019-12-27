@@ -4,6 +4,7 @@ import 'package:my_show/model/movie_details.dart';
 import 'package:my_show/model/tv_details.dart';
 import 'package:my_show/model/watch_progress.dart';
 import 'package:my_show/network/api_constant.dart';
+import 'package:my_show/network/network_call.dart';
 import 'package:my_show/page/movie_details_page.dart';
 import 'package:my_show/page/tv_details_page.dart';
 import 'package:my_show/pageview_page/page_manager/saved_page_manager.dart';
@@ -42,6 +43,20 @@ class _SavedPageState extends State<SavedPageWidget> {
       setState(() {
         savedTv = tvs;
       });
+
+      tvs.forEach((t){
+        if (t.isExpired) {
+          getTVDetail(t.id).then((result){
+            result.insert();
+            var index = savedTv.indexWhere((saved) => t.id == saved.id);
+            if (index != -1) {
+              setState(() {
+                savedTv[index] = result;
+              });
+            }
+          });
+        }
+      });
     });
   }
 
@@ -49,6 +64,20 @@ class _SavedPageState extends State<SavedPageWidget> {
     PrefHelper.instance.savedMovie.then((movies){
       setState(() {
         savedMovie = movies;
+      });
+
+      movies.forEach((t){
+        if (t.isExpired) {
+          getMovieDetail(t.id).then((result){
+            result.insert();
+            var index = savedMovie.indexWhere((saved) => t.id == saved.id);
+            if (index != -1) {
+              setState(() {
+                savedMovie[index] = result;
+              });
+            }
+          });
+        }
       });
     });
   }
@@ -74,7 +103,7 @@ class _SavedPageState extends State<SavedPageWidget> {
     widget._pageManager.deleteMode = false;
     super.dispose();
   }
-  
+
   Widget _appBar(bool isTv){
     return AppBar(
       brightness: Brightness.dark,
@@ -122,7 +151,7 @@ class _SavedPageState extends State<SavedPageWidget> {
     } else {
       return NotificationListener(
         child: ListView(
-          controller: _scrollController,
+            controller: _scrollController,
             children: ListTile.divideTiles(
                 color: Colors.white30,
                 context: context,
@@ -278,9 +307,9 @@ class _SavedPageState extends State<SavedPageWidget> {
         builder: (BuildContext context) {
           return _dismissible(context,
                   (_) {
-                    PrefHelper.instance.removeTv(tv.id).whenComplete((){
-                      _updateTv();
-                    });
+                PrefHelper.instance.removeTv(tv.id).whenComplete((){
+                  _updateTv();
+                });
                 Scaffold.of(context).showSnackBar(
                     SnackBar(content: Text('Item removed'),
                       action: SnackBarAction(
@@ -355,15 +384,15 @@ class _SavedPageState extends State<SavedPageWidget> {
                   style: TextStyle(color: Colors.redAccent),),
                 onPressed: (){
                   Navigator.of(context).pop();
-                    if (isTv) {
-                      PrefHelper.instance.removeTv(id).whenComplete((){
-                        _updateTv();
-                      });
-                    } else {
-                      PrefHelper.instance.removeMovie(id).whenComplete((){
-                        _updateMovie();
-                      });
-                    }
+                  if (isTv) {
+                    PrefHelper.instance.removeTv(id).whenComplete((){
+                      _updateTv();
+                    });
+                  } else {
+                    PrefHelper.instance.removeMovie(id).whenComplete((){
+                      _updateMovie();
+                    });
+                  }
                 },
               ),
             ],
