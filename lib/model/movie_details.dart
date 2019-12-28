@@ -91,7 +91,7 @@ class MovieDetails extends Details {
       id: json['id'],
       imdbId: json['imdb_id'],
       language: json['original_language'],
-      originalTitle: json['original_title'],
+      originalTitle: json['original_name'],
       overview: json['overview'],
       popularity: json['popularity'],
       posterPath: json['poster_path'],
@@ -103,8 +103,8 @@ class MovieDetails extends Details {
       spokenLanguages: json['spoken_languages'] != null ? (jsonDecode(json['spoken_languages']) as List).map((i) => SpokenLanguage.fromJson(i)).toList() : null,
       status: json['status'],
       tagline: json['tagline'],
-      title: json['title'],
-      video: json['video'],
+      title: json['name'],
+      video: json['video'] == 1,
       voteAverage: json['vote_average'],
       voteCount: json['vote_count'],
       savedTime: json['savedTime']
@@ -117,13 +117,11 @@ class MovieDetails extends Details {
     data['budget'] = this.budget;
     data['imdb_id'] = this.imdbId;
     data['original_language'] = this.language;
-    data['original_title'] = this.originalName;
     data['poster_path'] = this.posterPath;
     data['release_date'] = this.release;
     data['revenue'] = this.revenue;
     data['runtime'] = this.runtime;
     data['tagline'] = this.tagline;
-    data['title'] = this.name;
     data['video'] = this.video;
     if (this.country != null) {
       data['production_countries'] = this.country.map((v) => jsonEncode(v.toJson())).toList().toString();

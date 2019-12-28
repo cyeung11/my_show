@@ -66,6 +66,7 @@ class DatabaseHelper {
       'vote_average REAL,'
       'vote_count INTEGER,'
       'budget INTEGER,'
+      'production_companies TEXT,'
       'production_countries TEXT,'
       'original_language TEXT,'
       'release_date TEXT,'
