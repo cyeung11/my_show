@@ -65,7 +65,7 @@ class _SearchPageState extends State<SearchPageWidget> {
           widget._pageManager.currentPage++;
           widget._pageManager.isLoading = true;
 
-          getShows(widget._pageManager.isTv ? SEARCH_TV : SEARCH_MOVIE, widget._pageManager.query, widget._pageManager.currentPage).then((data){
+          getShows(widget._pageManager.isTv ? SEARCH_TV : SEARCH_MOVIE, widget._pageManager.query, widget._pageManager.currentPage, searchingMovie: !widget._pageManager.isTv).then((data){
             onDataReturn(data);
           });
         });
@@ -117,7 +117,7 @@ class _SearchPageState extends State<SearchPageWidget> {
                             resetScrollController();
                           });
 
-                          getShows(!isTv ? SEARCH_MOVIE : SEARCH_TV, widget._pageManager.query, widget._pageManager.currentPage).then((data){
+                          getShows(!isTv ? SEARCH_MOVIE : SEARCH_TV, widget._pageManager.query, widget._pageManager.currentPage, searchingMovie: !isTv).then((data){
                             onDataReturn(data);
                           });
                         }
@@ -140,7 +140,7 @@ class _SearchPageState extends State<SearchPageWidget> {
                 widget._pageManager.isTv = !widget._pageManager.isTv;
               });
 
-              getShows(isTv ? SEARCH_MOVIE : SEARCH_TV, widget._pageManager.query, widget._pageManager.currentPage).then((data){
+              getShows(isTv ? SEARCH_MOVIE : SEARCH_TV, widget._pageManager.query, widget._pageManager.currentPage, searchingMovie: !isTv).then((data){
                 onDataReturn(data);
               });
             } else {

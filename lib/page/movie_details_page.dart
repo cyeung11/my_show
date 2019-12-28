@@ -37,12 +37,12 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
   List<Show> _similar;
   List<String> _images;
 
-  var _isFav = false;
+  var _isFav;
 
   @override
   void initState() {
     super.initState();
-    _updateFav();
+    _isFav = PrefHelper.instance.isMovieSaved(widget.id);
     if (_credit == null) {
       getCredit(false, widget.id).then((response){
         if (response != null) {
@@ -71,14 +71,6 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
         }
       });
     }
-  }
-
-  _updateFav(){
-    PrefHelper.instance.isMovieSaved(widget.id).then((isFav){
-      setState(() {
-        _isFav = isFav;
-      });
-    });
   }
 
   @override
@@ -227,8 +219,12 @@ class _MovieDetailPageState extends State<MovieDetailPage>{
                   var future = _isFav
                       ? PrefHelper.instance.removeMovie(widget.id)
                       : PrefHelper.instance.addMovie(detail);
-                  future.whenComplete((){
-                    _updateFav();
+                  future.then((result){
+                    if (result) {
+                      setState(() {
+                        _isFav = !_isFav;
+                      });
+                    }
                   });
                 },
               ),

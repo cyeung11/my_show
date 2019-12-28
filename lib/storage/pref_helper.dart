@@ -9,8 +9,10 @@ import '../model/genre.dart';
 import '../network/api_constant.dart';
 import '../network/network_call.dart';
 
-const String PREF_TV_GENRE = "tv_genre";
-const String PREF_MOVIE_GENRE = "movie_genre";
+const String _PREF_SAVED_MOVIE = "saved_movie";
+const String _PREF_WATCH_TV = "watched_tv";
+const String _PREF_TV_GENRE = "tv_genre";
+const String _PREF_MOVIE_GENRE = "movie_genre";
 
 const String PREF_DRIVE_USER_NAME = "drive_user_name";
 const String PREF_DRIVE_BACKUP_TIME = "drive_backup_time";
@@ -20,8 +22,12 @@ class PrefHelper {
 
   static PrefHelper instance;
 
-  Future<List<TvDetails>> get watchTv => TvDetails.all();
-  Future<List<MovieDetails>> get savedMovie => MovieDetails.all();
+  Future<List<TvDetails>> get watchTv => TvDetails.allIn(_watchTvIds.toList());
+  Future<List<MovieDetails>> get savedMovie => MovieDetails.allIn(_savedMovieIds.toList());
+
+  Set<int> _watchTvIds;
+  Set<int> _savedMovieIds;
+
   List<Genre> tvGenres;
   List<Genre> movieGenres;
 
@@ -33,7 +39,10 @@ class PrefHelper {
   }
 
   PrefHelper(this._pref) {
-    tvGenres = _getGenre(PREF_TV_GENRE);
+    _savedMovieIds = getIntList(_PREF_SAVED_MOVIE)?.toSet() ?? Set<int>();
+    _watchTvIds = getIntList(_PREF_WATCH_TV)?.toSet() ?? Set<int>();
+
+    tvGenres = _getGenre(_PREF_TV_GENRE);
     if (tvGenres.isEmpty) {
       getGenre(GET_TV_GENRE).then((data){
         if (data?.genres != null) {
@@ -41,7 +50,7 @@ class PrefHelper {
         }
       });
     }
-    movieGenres = _getGenre(PREF_MOVIE_GENRE);
+    movieGenres = _getGenre(_PREF_MOVIE_GENRE);
     if (movieGenres.isEmpty) {
       getGenre(GET_MOVIE_GENRE).then((data){
         if (data?.genres != null) {
@@ -53,43 +62,59 @@ class PrefHelper {
 
   restore(Backup backup) {
     if (backup.movies != null) {
+      _savedMovieIds.addAll(backup.movies.map((m) => m.id));
+      setIntList(_PREF_SAVED_MOVIE, _savedMovieIds.toList());
       MovieDetails.insertAll(backup.movies);
     }
     if (backup.tv != null) {
+      _watchTvIds.addAll(backup.tv.map((t) => t.id));
+      setIntList(_PREF_WATCH_TV, _watchTvIds.toList());
       TvDetails.insertAll(backup.tv);
     }
   }
 
-  Future<void> addMovie(MovieDetails newMovie){
-    return newMovie.insert();
+  Future<bool> addMovie(MovieDetails newMovie){
+    newMovie.insert();
+    _savedMovieIds.add(newMovie.id);
+    return setIntList(_PREF_SAVED_MOVIE, _savedMovieIds.toList());
   }
 
-  Future<void> removeMovie(int movieId){
-    return MovieDetails.delete(movieId);
+  Future<bool> removeMovie(int movieId){
+    if (_savedMovieIds.remove(movieId)){
+      return setIntList(_PREF_SAVED_MOVIE, _savedMovieIds.toList());
+    } else {
+      return Future.value(false);
+    }
   }
 
-  Future<void> addTv(TvDetails newTv){
-    return newTv.insert();
+  Future<bool> addTv(TvDetails newTv){
+    newTv.insert();
+    _watchTvIds.add(newTv.id);
+    return setIntList(_PREF_WATCH_TV, _watchTvIds.toList());
   }
 
-  Future<void> removeTv(int tvId){
-    return TvDetails.delete(tvId);
+  Future<bool> removeTv(int tvId){
+    if (_watchTvIds.remove(tvId)){
+      return setIntList(_PREF_WATCH_TV, _watchTvIds.toList());
+    } else {
+      return Future.value(false);
+    }
   }
 
-  Future<bool> isMovieSaved(int movieId) async {
-    return await MovieDetails.getById(movieId) != null;
+  bool isMovieSaved(int movieId) {
+    return _savedMovieIds.contains(movieId);
   }
-  Future<bool> isTvSaved(int tvId) async {
-    return await TvDetails.getById(tvId) != null;
+  bool isTvSaved(int tvId) {
+    return _watchTvIds.contains(tvId);
   }
 
   saveTVGenre(List<Genre> genres){
     tvGenres = genres;
-    _saveGenre(genres, PREF_TV_GENRE);
+    _saveGenre(genres, _PREF_TV_GENRE);
   }
   saveMovieGenre(List<Genre> genres){
     movieGenres = genres;
-    _saveGenre(genres, PREF_MOVIE_GENRE);
+    _saveGenre(genres, _PREF_MOVIE_GENRE);
   }
   _saveGenre(List<Genre> genres, String key){
     List<String> toSave = genres.map((genre) => jsonEncode(genre)).toList();
@@ -129,4 +154,15 @@ class PrefHelper {
     return _pref.getInt(key) ?? defaultValue;
   }
 
+  Future<bool> setIntList(String key, List<int> value){
+    if (value != null) {
+      return _pref.setStringList(key, value.map((i) => i.toString()).toList());
+    } else {
+      return _pref.remove(key);
+    }
+  }
+
+  List<int> getIntList(String key){
+    return _pref.getStringList(key)?.map((string) => (int.tryParse(string) ?? 0))?.toList();
+  }
 }

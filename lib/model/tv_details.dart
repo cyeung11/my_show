@@ -226,6 +226,14 @@ class TvDetails extends Details {
             return null;
         }
     }
+    
+    static Future<List<TvDetails>> allIn(List<int> ids) async {
+        final List<Map<String, dynamic>> maps = await DatabaseHelper.db.query(DatabaseHelper.TABLE_TV, where: 'id IN (${ids.join(', ')})');
+
+        return List.generate(maps.length, (i) {
+            return TvDetails.fromDb(maps[i]);
+        });
+    }
 
     static Future<List<TvDetails>> all() async {
         final List<Map<String, dynamic>> maps = await DatabaseHelper.db.query( DatabaseHelper.TABLE_TV);

@@ -33,16 +33,17 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
   void initState() {
     super.initState();
     _animator = MenuAnimator(this);
-  }
 
-  @override
-  Widget build(BuildContext context) {
     if (widget._pageManager.movies == null) {
       if (widget._pageManager.currentType == null) {
         widget._pageManager.currentType = widget._pageManager.isTv ? TrendingType.TvPopular : TrendingType.MoviePopular;
       }
-      _reload(context, widget._pageManager.currentType);
+      _reload(context);
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: FutureBuilder<ShowListResponse>(
         future: widget._pageManager.movies,
@@ -64,7 +65,21 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
     var bodies = List<Widget>();
     bodies.add(
       SafeArea(
-          child:  Column(
+          child:  snapshot.connectionState == ConnectionState.done && snapshot.data == null
+
+              ? Container(
+            constraints: BoxConstraints.expand(),
+            child: IconButton(
+              icon: Icon(Icons.refresh, color: Colors.white, size: 50,),
+              onPressed: (){
+                setState(() {
+                  _reload(context);
+                });
+              },
+            ),
+          )
+
+              : Column(
             mainAxisSize: MainAxisSize.max,
             children: <Widget>[
               Container(
@@ -83,7 +98,8 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
               ), // the movie poster carousel
               _showDetail(snapshot),
             ],
-          )),
+          )
+      ),
     );
     bodies.add(Positioned(
       top: MediaQuery.of(context).padding.top, right: 0,
@@ -96,6 +112,8 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
                 widget._pageManager.isTv = !widget._pageManager.isTv;
                 widget._pageManager.currentType = widget._pageManager.isTv ? TrendingType.TvPopular : TrendingType.MoviePopular;
                 widget._pageManager.movies = null;
+
+                _reload(context);
               });
             },
           ),
@@ -279,6 +297,7 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
     if (widget._pageManager.currentType != newType) {
       widget._pageManager.currentType = newType;
       widget._pageManager.movies = null;
+      _reload(context);
     }
     setState(() {
       widget._pageManager.isMenuOverlay = false;
@@ -360,13 +379,13 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
 
   }
 
-  _showRetrySnackbar(BuildContext context, TrendingType type) {
+  _showRetrySnackbar(BuildContext context) {
     final snackBar = SnackBar(content: Text('Fail to load :('),
       action: SnackBarAction(
         label: 'Retry',
         onPressed: () {
           setState(() {
-            _reload(context, type);
+            _reload(context);
           });
         },
       ),
@@ -375,11 +394,11 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
     Scaffold.of(context).showSnackBar(snackBar);
   }
 
-  _reload(BuildContext context, TrendingType type) {
+  _reload(BuildContext context) {
     widget._pageManager.currentCarouselPage = 0;
-    widget._pageManager.movies = getShows(getNetworkPath(type), null, 1).then((data) {
+    widget._pageManager.movies = getShows(getNetworkPath(widget._pageManager.currentType), null, 1).then((data) {
       if (data == null) {
-        _showRetrySnackbar(context, type);
+        _showRetrySnackbar(context);
       }
       return data;
     });

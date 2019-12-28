@@ -36,12 +36,12 @@ class _TvPageState extends State<TvDetailPage>{
   List<Show> _similar;
   List<String> _images;
 
-  var _isFav = false;
+  var _isFav;
 
   @override
   void initState() {
     super.initState();
-    _updateFav();
+    _isFav = PrefHelper.instance.isTvSaved(widget.id);
     if (_credit == null) {
       getCredit(true, widget.id).then((response){
         if (response?.cast?.isNotEmpty == true) {
@@ -71,13 +71,6 @@ class _TvPageState extends State<TvDetailPage>{
     }
   }
 
-  _updateFav(){
-    PrefHelper.instance.isTvSaved(widget.id).then((isFav){
-      setState(() {
-        _isFav = isFav;
-      });
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -224,12 +217,20 @@ class _TvPageState extends State<TvDetailPage>{
                 icon: Icon(_isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
                 onPressed: (){
                   if (_isFav) {
-                    PrefHelper.instance.removeTv(widget.id).then((_){
-                      _updateFav();
+                    PrefHelper.instance.removeTv(widget.id).then((result){
+                      if (result) {
+                        setState(() {
+                          _isFav = false;
+                        });
+                      }
                     });
                   } else {
-                    PrefHelper.instance.addTv(tv).then((_){
-                      _updateFav();
+                    PrefHelper.instance.addTv(tv).then((result){
+                      if (result) {
+                        setState(() {
+                          _isFav = true;
+                        });
+                      }
                     });
                   }
                 },

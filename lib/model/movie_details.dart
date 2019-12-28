@@ -174,6 +174,14 @@ class MovieDetails extends Details {
     }
   }
 
+  static Future<List<MovieDetails>> allIn(List<int> ids) async {
+    final List<Map<String, dynamic>> maps = await DatabaseHelper.db.query(DatabaseHelper.TABLE_MOVIE, where: 'id IN (${ids.join(', ')})');
+
+    return List.generate(maps.length, (i) {
+      return MovieDetails.fromDb(maps[i]);
+    });
+  }
+
   static Future<List<MovieDetails>> all() async {
     final List<Map<String, dynamic>> maps = await DatabaseHelper.db.query( DatabaseHelper.TABLE_MOVIE);
 
