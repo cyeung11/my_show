@@ -393,13 +393,13 @@ class _SavedPageState extends State<SavedPageWidget> {
         },
       ));
     }
-    widgetList.add(Text(
-      tv.progress.userReadable(),
-      style: TextStyle(
-        color: Colors.white,
-      ),
-    ));
     if (widget._pageManager.deleteMode) {
+      widgetList.add(Text(
+        tv.progress.userReadable(),
+        style: TextStyle(
+          color: Colors.white,
+        ),
+      ));
       widgetList.add(
           IconButton(
             icon: Icon(Icons.edit, size: 14),
@@ -410,6 +410,17 @@ class _SavedPageState extends State<SavedPageWidget> {
           )
       );
     } else {
+      widgetList.add(GestureDetector(
+        child: Text(
+          tv.progress.userReadable(),
+          style: TextStyle(
+            color: Colors.white,
+          ),
+        ),
+        onLongPress: (){
+          _selectEpisode(context, tv);
+        },
+      ));
       widgetList.add(
           IconButton(
             icon: Icon(Icons.remove),
