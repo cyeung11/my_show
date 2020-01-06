@@ -13,16 +13,15 @@ import 'package:my_show/widget/DetailPhotoList.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import '../asset_path.dart';
-import '../show_storage_helper.dart';
+import '../storage/pref_helper.dart';
 import 'crew_page.dart';
 import 'gallery_page.dart';
 
 class TvDetailPage extends StatefulWidget{
   final int id;
 
-  final StorageHelper pref;
 
-  TvDetailPage({@required this.id, @required this.pref, Key key}): super(key: key);
+  TvDetailPage( this.id, {Key key}): super(key: key);
 
   @override
   State createState() => _TvPageState();
@@ -37,12 +36,12 @@ class _TvPageState extends State<TvDetailPage>{
   List<Show> _similar;
   List<String> _images;
 
-  var _isFav = false;
+  var _isFav;
 
   @override
   void initState() {
     super.initState();
-    _updateFav();
+    _isFav = PrefHelper.instance.isTvSaved(widget.id);
     if (_credit == null) {
       getCredit(true, widget.id).then((response){
         if (response?.cast?.isNotEmpty == true) {
@@ -72,13 +71,6 @@ class _TvPageState extends State<TvDetailPage>{
     }
   }
 
-  _updateFav(){
-    widget.pref.isTvSaved(widget.id).then((isFav){
-      setState(() {
-        _isFav = isFav;
-      });
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -225,12 +217,20 @@ class _TvPageState extends State<TvDetailPage>{
                 icon: Icon(_isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
                 onPressed: (){
                   if (_isFav) {
-                    widget.pref.removeTv(widget.id).then((_){
-                      _updateFav();
+                    PrefHelper.instance.removeTv(widget.id).then((result){
+                      if (result) {
+                        setState(() {
+                          _isFav = false;
+                        });
+                      }
                     });
                   } else {
-                    widget.pref.addTv(tv).then((_){
-                      _updateFav();
+                    PrefHelper.instance.addTv(tv).then((result){
+                      if (result) {
+                        setState(() {
+                          _isFav = true;
+                        });
+                      }
                     });
                   }
                 },
@@ -662,7 +662,7 @@ class _TvPageState extends State<TvDetailPage>{
       onTap: (){
         Navigator.of(context).push(MaterialPageRoute(
             builder: (_){
-              return TvDetailPage(id: show.id, pref: widget.pref,);
+              return TvDetailPage(show.id);
             }
         ));
       },

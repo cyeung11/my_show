@@ -4,17 +4,15 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:my_show/drive/auth_manager.dart';
 import 'package:my_show/drive/show_back_up_helper.dart';
 import 'package:my_show/page/info_page.dart';
-import 'package:my_show/show_storage_helper.dart';
+import 'package:my_show/storage/pref_helper.dart';
 
 class SettingPageWidget extends StatefulWidget {
-
-  final StorageHelper _pref;
 
   final ValueChanged<GoogleSignInAccount> _onRestoreNeed;
 
   final AuthManager _authMan;
 
-  SettingPageWidget(this._pref, this._onRestoreNeed, this._authMan, {Key key}): super(key: key);
+  SettingPageWidget(this._onRestoreNeed, this._authMan, {Key key}): super(key: key);
 
   @override
   State<StatefulWidget> createState() => _SettingPageState();
@@ -29,7 +27,7 @@ class _SettingPageState extends State<SettingPageWidget>{
   @override
   void initState() {
     super.initState();
-    loginName = widget._pref.getString(PREF_DRIVE_USER_NAME);
+    loginName = PrefHelper.instance.getString(PREF_DRIVE_USER_NAME);
     switchValue = loginName?.isNotEmpty == true;
   }
 
@@ -118,7 +116,7 @@ class _SettingPageState extends State<SettingPageWidget>{
                           setState(() {
                             if (acc?.email?.isNotEmpty == true) {
                               loginName = acc.email;
-                              widget._pref.setString(PREF_DRIVE_USER_NAME, acc.email);
+                              PrefHelper.instance.setString(PREF_DRIVE_USER_NAME, acc.email);
                               switchValue = true;
 
                               Fluttertoast.showToast(
@@ -131,7 +129,7 @@ class _SettingPageState extends State<SettingPageWidget>{
                               widget._onRestoreNeed(acc);
 
                             } else {
-                              widget._pref.setString(PREF_DRIVE_USER_NAME, null);
+                              PrefHelper.instance.setString(PREF_DRIVE_USER_NAME, null);
                               switchValue = false;
                             }
                           });
@@ -139,7 +137,7 @@ class _SettingPageState extends State<SettingPageWidget>{
                       } else {
                         setState(() {
                           widget._authMan.signOut();
-                          widget._pref.setString(PREF_DRIVE_USER_NAME, null);
+                          PrefHelper.instance.setString(PREF_DRIVE_USER_NAME, null);
                           loginName = null;
                           switchValue = false;
                         });
@@ -165,7 +163,7 @@ class _SettingPageState extends State<SettingPageWidget>{
               ),
               onTap: switchValue ? (){
                 widget._authMan.getAccount().then((acc){
-                  ShowBackupHelper.backup(acc, widget._pref);
+                  ShowBackupHelper.backup(acc);
                 });
               } : null,
             ),

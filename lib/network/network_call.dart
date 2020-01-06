@@ -13,10 +13,13 @@ import 'package:my_show/network/response/genre_list_response.dart';
 
 import 'response/movie_list_response.dart';
 
-Future<ShowListResponse> getShows(String path, String query, int page) async {
+Future<ShowListResponse> getShows(String path, String query, int page, {bool searchingMovie = false}) async {
   var queryParameters = {
     'api_key': API_KEY_V3,
   };
+  if (searchingMovie) {
+    queryParameters['include_adult'] = 'false';
+  }
   if (query != null) {
     queryParameters['query'] = query;
   }
@@ -41,6 +44,9 @@ Future<ShowListResponse> discover(bool forTv, int year, double voteAverage, Genr
   var queryParameters = {
     'api_key': API_KEY_V3,
   };
+  if (!forTv) {
+    queryParameters['include_adult'] = 'false';
+  }
   if (year != null) {
     if (forTv) {
       queryParameters['first_air_date_year'] = year.toString();
@@ -115,7 +121,9 @@ Future<MovieDetails> getMovieDetail(int id) async {
   try {
     final response = await http.get(Uri.https(DOMAIN, GET_MOVIE_DETAIL + id.toString(), queryParameters));
     if (response.statusCode == 200) {
-      return MovieDetails.fromJson(json.decode(response.body));
+      var movie = MovieDetails.fromJson(json.decode(response.body));
+      movie.insert();
+      return movie;
     } else {
       return null;
     }
@@ -133,7 +141,9 @@ Future<TvDetails> getTVDetail(int id) async {
   try {
     final response = await http.get(Uri.https(DOMAIN, GET_TV_DETAIL + id.toString(), queryParameters));
     if (response.statusCode == 200) {
-      return TvDetails.fromJson(json.decode(response.body));
+      var tv = TvDetails.fromJson(json.decode(response.body));
+      tv.insert();
+      return tv;
     } else {
       return null;
     }

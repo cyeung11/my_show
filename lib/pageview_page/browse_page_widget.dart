@@ -13,15 +13,13 @@ import 'package:my_show/widget/select_dialog.dart';
 import 'package:numberpicker/numberpicker.dart';
 
 import '../asset_path.dart';
-import '../show_storage_helper.dart';
+import '../storage/pref_helper.dart';
 
 class BrowsePageWidget extends StatefulWidget{
 
-  final StorageHelper _pref;
-
   final BrowsePageManager _pageManager;
 
-  BrowsePageWidget( this._pref, this._pageManager, {Key key}): super(key: key);
+  BrowsePageWidget(this._pageManager, {Key key}): super(key: key);
 
   @override
   State createState()  => _BrowsePageState();
@@ -35,6 +33,13 @@ class _BrowsePageState extends State<BrowsePageWidget> {
   void initState() {
     super.initState();
     resetScrollController();
+
+    if (widget._pageManager.shows.isEmpty && !widget._pageManager.isLoading) {
+      widget._pageManager.isLoading = true;
+      discover(widget._pageManager.isTv, widget._pageManager.year, widget._pageManager.vote, widget._pageManager.genre, widget._pageManager.sort, widget._pageManager.currentPage).then((data){
+        onDataReturn(data);
+      });
+    }
   }
 
   resetScrollController(){
@@ -44,12 +49,6 @@ class _BrowsePageState extends State<BrowsePageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget._pageManager.shows.isEmpty && !widget._pageManager.isLoading) {
-      widget._pageManager.isLoading = true;
-      discover(widget._pageManager.isTv, widget._pageManager.year, widget._pageManager.vote, widget._pageManager.genre, widget._pageManager.sort, widget._pageManager.currentPage).then((data){
-        onDataReturn(data);
-      });
-    }
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -73,30 +72,40 @@ class _BrowsePageState extends State<BrowsePageWidget> {
   }
 
   _scrollListener() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
-      if (widget._pageManager.currentPage + 1 <= widget._pageManager.totalPage) {
-        setState(() {
-          widget._pageManager.currentPage++;
-          widget._pageManager.isLoading = true;
+    if (widget._pageManager.shows.isNotEmpty) {
+      if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+        if (widget._pageManager.currentPage + 1 <= widget._pageManager.totalPage) {
+          setState(() {
+            widget._pageManager.currentPage++;
+            widget._pageManager.isLoading = true;
 
-          discover(widget._pageManager.isTv, widget._pageManager.year,
-              widget._pageManager.vote, widget._pageManager.genre,
-              widget._pageManager.sort, widget._pageManager.currentPage).then((
-              data) {
-            onDataReturn(data);
+            discover(widget._pageManager.isTv, widget._pageManager.year,
+                widget._pageManager.vote, widget._pageManager.genre,
+                widget._pageManager.sort, widget._pageManager.currentPage).then((
+                data) {
+              onDataReturn(data);
+            });
           });
-        });
+        }
       }
     }
   }
 
   Widget _buildResultList(BuildContext context){
     if (widget._pageManager.shows.isEmpty) {
-      if (widget._pageManager.isLoading) {
-        return Padding(padding: EdgeInsets.only(top: 10), child: CircularProgressIndicator());
-      } else {
-        return Container();
-      }
+      return Padding(padding: EdgeInsets.all(10),
+          child: widget._pageManager.isLoading
+              ? CircularProgressIndicator()
+              : IconButton(
+            icon: Icon(Icons.refresh, color: Colors.white, size: 50,),
+            onPressed: (){
+              widget._pageManager.isLoading = true;
+              discover(widget._pageManager.isTv, widget._pageManager.year, widget._pageManager.vote, widget._pageManager.genre, widget._pageManager.sort, widget._pageManager.currentPage).then((data){
+                onDataReturn(data);
+              });
+            },
+          )
+      );
     }
 
     var entries = ListTile.divideTiles(
@@ -340,7 +349,7 @@ class _BrowsePageState extends State<BrowsePageWidget> {
             barrierDismissible: true,
             builder: (context){
               return SelectDialog<Genre>(
-                selectables: widget._pageManager.isTv ? widget._pref.tvGenres : widget._pref.movieGenres,
+                selectables: widget._pageManager.isTv ? PrefHelper.instance.tvGenres : PrefHelper.instance.movieGenres,
                 currentSelect: widget._pageManager.genre,
               );
             }
@@ -475,7 +484,7 @@ class _BrowsePageState extends State<BrowsePageWidget> {
         Navigator.of(context).push(
             MaterialPageRoute(
                 builder: (BuildContext _) {
-                  return movie.isMovie() ? MovieDetailPage(id: movie.id, pref: widget._pref,) : TvDetailPage(id: movie.id, pref: widget._pref,);
+                  return movie.isMovie() ? MovieDetailPage(movie.id) : TvDetailPage(movie.id);
                 }
             )
         );

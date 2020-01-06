@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:my_show/db/database_helper.dart';
+import 'package:my_show/storage/database_helper.dart';
 import 'package:my_show/model/country.dart';
 import 'package:my_show/model/details.dart';
 import 'package:my_show/model/genre.dart';
@@ -24,10 +24,10 @@ class MovieDetails extends Details {
   MovieDetails({this.adult, String backdropPath, this.budget, List<Genre> genres, String homePage,
     int id, this.imdbId, this.language, String originalTitle, String overview, double popularity, String posterPath,
     List<Role> productionCompanies, this.country, this.release, this.revenue, this.runtime, this.spokenLanguages,
-    String status, this.tagline, String title, this.video, double voteAverage, int voteCount}
+    String status, this.tagline, String title, this.video, double voteAverage, int voteCount, int savedTime}
       ) : super(backdropPath: backdropPath, genres: genres, homePage: homePage, id: id, originalName: originalTitle,
       overview: overview, popularity: popularity, posterPath: posterPath, productionCompanies: productionCompanies,
-      status: status, name: title, voteAverage: voteAverage, voteCount: voteCount);
+      status: status, name: title, voteAverage: voteAverage, voteCount: voteCount, savedTime: savedTime);
 
   factory MovieDetails.fromJson(Map<String, dynamic> json) {
     return MovieDetails(
@@ -91,7 +91,7 @@ class MovieDetails extends Details {
       id: json['id'],
       imdbId: json['imdb_id'],
       language: json['original_language'],
-      originalTitle: json['original_title'],
+      originalTitle: json['original_name'],
       overview: json['overview'],
       popularity: json['popularity'],
       posterPath: json['poster_path'],
@@ -103,10 +103,11 @@ class MovieDetails extends Details {
       spokenLanguages: json['spoken_languages'] != null ? (jsonDecode(json['spoken_languages']) as List).map((i) => SpokenLanguage.fromJson(i)).toList() : null,
       status: json['status'],
       tagline: json['tagline'],
-      title: json['title'],
-      video: json['video'],
+      title: json['name'],
+      video: json['video'] == 1,
       voteAverage: json['vote_average'],
       voteCount: json['vote_count'],
+      savedTime: json['savedTime']
     );
   }
 
@@ -116,13 +117,11 @@ class MovieDetails extends Details {
     data['budget'] = this.budget;
     data['imdb_id'] = this.imdbId;
     data['original_language'] = this.language;
-    data['original_title'] = this.originalName;
     data['poster_path'] = this.posterPath;
     data['release_date'] = this.release;
     data['revenue'] = this.revenue;
     data['runtime'] = this.runtime;
     data['tagline'] = this.tagline;
-    data['title'] = this.name;
     data['video'] = this.video;
     if (this.country != null) {
       data['production_countries'] = this.country.map((v) => jsonEncode(v.toJson())).toList().toString();
@@ -134,6 +133,7 @@ class MovieDetails extends Details {
   }
 
   Future<void> insert() async {
+    savedTime = DateTime.now().millisecondsSinceEpoch;
     await DatabaseHelper.db.insert(
       DatabaseHelper.TABLE_MOVIE,
       toDbMap(),
@@ -144,6 +144,7 @@ class MovieDetails extends Details {
   static Future<void> insertAll(List<MovieDetails> data) async {
     await DatabaseHelper.db.transaction((t) async {
       data.forEach((m) async {
+        m.savedTime = DateTime.now().millisecondsSinceEpoch;
         await t.insert(
             DatabaseHelper.TABLE_MOVIE, m.toDbMap(),
             conflictAlgorithm: ConflictAlgorithm.replace);
@@ -169,6 +170,14 @@ class MovieDetails extends Details {
     } else {
       return null;
     }
+  }
+
+  static Future<List<MovieDetails>> allIn(List<int> ids) async {
+    final List<Map<String, dynamic>> maps = await DatabaseHelper.db.query(DatabaseHelper.TABLE_MOVIE, where: 'id IN (${ids.join(', ')})');
+
+    return List.generate(maps.length, (i) {
+      return MovieDetails.fromDb(maps[i]);
+    });
   }
 
   static Future<List<MovieDetails>> all() async {

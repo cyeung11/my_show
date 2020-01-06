@@ -23,10 +23,14 @@ abstract class Details {
   int voteCount;
   double voteAverage;
 
+  int savedTime;
+
+  bool get isExpired => (DateTime.now().millisecondsSinceEpoch - savedTime) >= Duration.microsecondsPerDay;
+
   Details({this.backdropPath, this.genres, this.homePage, this.id, this.name,
     this.originalName, this.overview, this.popularity,
     this.posterPath, this.productionCompanies, this.status, this.voteCount,
-    this.voteAverage});
+    this.voteAverage, this.savedTime});
 
 //  factory Details.fromJson(Map<String, dynamic> json) {
 //    return Details(
@@ -87,6 +91,7 @@ abstract class Details {
     if (this.productionCompanies != null) {
       data['production_companies'] = this.productionCompanies.map((v) => jsonEncode(v.toJson())).toList().toString();
     }
+    data['savedTime'] = this.savedTime;
     return data;
   }
 

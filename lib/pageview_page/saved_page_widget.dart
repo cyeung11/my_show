@@ -4,21 +4,20 @@ import 'package:my_show/model/movie_details.dart';
 import 'package:my_show/model/tv_details.dart';
 import 'package:my_show/model/watch_progress.dart';
 import 'package:my_show/network/api_constant.dart';
+import 'package:my_show/network/network_call.dart';
 import 'package:my_show/page/movie_details_page.dart';
 import 'package:my_show/page/tv_details_page.dart';
 import 'package:my_show/pageview_page/page_manager/saved_page_manager.dart';
 import 'package:my_show/widget/episode_select_dialog.dart';
 
 import '../asset_path.dart';
-import '../show_storage_helper.dart';
+import '../storage/pref_helper.dart';
 
 class SavedPageWidget extends StatefulWidget{
 
-  final StorageHelper _pref;
-
   final SavedPageManager _pageManager;
 
-  SavedPageWidget( this._pref, this._pageManager, {Key key}): super(key: key);
+  SavedPageWidget(this._pageManager, {Key key}): super(key: key);
 
   @override
   State createState()  => _SavedPageState();
@@ -40,17 +39,45 @@ class _SavedPageState extends State<SavedPageWidget> {
   }
 
   _updateTv(){
-    widget._pref.watchTv.then((tvs){
+    PrefHelper.instance.watchTv.then((tvs){
       setState(() {
         savedTv = tvs;
+      });
+
+      tvs.forEach((t){
+        if (t.isExpired) {
+          getTVDetail(t.id).then((result){
+            result.insert();
+            var index = savedTv.indexWhere((saved) => t.id == saved.id);
+            if (index != -1) {
+              setState(() {
+                savedTv[index] = result;
+              });
+            }
+          });
+        }
       });
     });
   }
 
   _updateMovie(){
-    widget._pref.savedMovie.then((movies){
+    PrefHelper.instance.savedMovie.then((movies){
       setState(() {
         savedMovie = movies;
+      });
+
+      movies.forEach((t){
+        if (t.isExpired) {
+          getMovieDetail(t.id).then((result){
+            result.insert();
+            var index = savedMovie.indexWhere((saved) => t.id == saved.id);
+            if (index != -1) {
+              setState(() {
+                savedMovie[index] = result;
+              });
+            }
+          });
+        }
       });
     });
   }
@@ -76,7 +103,7 @@ class _SavedPageState extends State<SavedPageWidget> {
     widget._pageManager.deleteMode = false;
     super.dispose();
   }
-  
+
   Widget _appBar(bool isTv){
     return AppBar(
       brightness: Brightness.dark,
@@ -124,7 +151,7 @@ class _SavedPageState extends State<SavedPageWidget> {
     } else {
       return NotificationListener(
         child: ListView(
-          controller: _scrollController,
+            controller: _scrollController,
             children: ListTile.divideTiles(
                 color: Colors.white30,
                 context: context,
@@ -169,7 +196,7 @@ class _SavedPageState extends State<SavedPageWidget> {
           Navigator.of(context).push(
               MaterialPageRoute(
                   builder: (BuildContext _) {
-                    return isTv ? TvDetailPage(id: id, pref: widget._pref,) : MovieDetailPage(id: id, pref: widget._pref,);
+                    return isTv ? TvDetailPage(id) : MovieDetailPage(id);
                   }
               )
           );
@@ -229,7 +256,7 @@ class _SavedPageState extends State<SavedPageWidget> {
     return Builder(
       builder: (BuildContext context){
         return _dismissible(context, (_){
-          widget._pref.removeMovie(movie.id).whenComplete((){
+          PrefHelper.instance.removeMovie(movie.id).whenComplete((){
             _updateMovie();
           });
           Scaffold.of(context).showSnackBar(
@@ -237,7 +264,7 @@ class _SavedPageState extends State<SavedPageWidget> {
                 action: SnackBarAction(
                   label: 'Undo',
                   onPressed: () {
-                    widget._pref.addMovie(movie).whenComplete((){
+                    PrefHelper.instance.addMovie(movie).whenComplete((){
                       _updateMovie();
                     });
                   },
@@ -280,15 +307,15 @@ class _SavedPageState extends State<SavedPageWidget> {
         builder: (BuildContext context) {
           return _dismissible(context,
                   (_) {
-                    widget._pref.removeTv(tv.id).whenComplete((){
-                      _updateTv();
-                    });
+                PrefHelper.instance.removeTv(tv.id).whenComplete((){
+                  _updateTv();
+                });
                 Scaffold.of(context).showSnackBar(
                     SnackBar(content: Text('Item removed'),
                       action: SnackBarAction(
                         label: 'Undo',
                         onPressed: () {
-                          widget._pref.addTv(tv).whenComplete((){
+                          PrefHelper.instance.addTv(tv).whenComplete((){
                             _updateTv();
                           });
                         },
@@ -357,15 +384,15 @@ class _SavedPageState extends State<SavedPageWidget> {
                   style: TextStyle(color: Colors.redAccent),),
                 onPressed: (){
                   Navigator.of(context).pop();
-                    if (isTv) {
-                      widget._pref.removeTv(id).whenComplete((){
-                        _updateTv();
-                      });
-                    } else {
-                      widget._pref.removeMovie(id).whenComplete((){
-                        _updateMovie();
-                      });
-                    }
+                  if (isTv) {
+                    PrefHelper.instance.removeTv(id).whenComplete((){
+                      _updateTv();
+                    });
+                  } else {
+                    PrefHelper.instance.removeMovie(id).whenComplete((){
+                      _updateMovie();
+                    });
+                  }
                 },
               ),
             ],
