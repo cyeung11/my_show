@@ -102,6 +102,13 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
       ),
     );
     bodies.add(Positioned(
+      top: MediaQuery.of(context).padding.top + 10, left: 16,
+      child: Text(
+        widget._pageManager.isTv ? 'TV' : 'Movie',
+        style: TextStyle(color: Colors.white, fontSize: 20),
+      ),
+    ));
+    bodies.add(Positioned(
       top: MediaQuery.of(context).padding.top, right: 0,
       child: Row(
         children: <Widget>[

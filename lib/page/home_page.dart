@@ -102,7 +102,12 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         return SearchPageWidget(_searchPageManager);
       }
       case 3: {
-        return SavedPageWidget(_savedPageManager);
+        return SavedPageWidget(_savedPageManager, (){
+          _pageController.jumpToPage(2);
+          setState(() {
+            _currentItem = 2;
+          });
+        });
       }
       default: {
         return SettingPageWidget(_restore, widget._authMan);

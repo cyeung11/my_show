@@ -101,7 +101,7 @@ class _SearchPageState extends State<SearchPageWidget> {
                         fontSize: 16,
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Search',
+                        hintText: 'Search ${widget._pageManager.isTv ? 'TV' : 'Movie'}',
                         border: InputBorder.none,
                       ),
                       textInputAction: TextInputAction.search,

@@ -17,7 +17,9 @@ class SavedPageWidget extends StatefulWidget{
 
   final SavedPageManager _pageManager;
 
-  SavedPageWidget(this._pageManager, {Key key}): super(key: key);
+  final VoidCallback _onSearch;
+
+  SavedPageWidget(this._pageManager, this._onSearch, {Key key}): super(key: key);
 
   @override
   State createState()  => _SavedPageState();
@@ -109,7 +111,7 @@ class _SavedPageState extends State<SavedPageWidget> {
       brightness: Brightness.dark,
       backgroundColor: Colors.black,
       title: Text(
-        isTv ? 'My TV' : 'My Movies',
+        isTv ? 'Saved TV' : 'Saved Movies',
         style: TextStyle(
             color: Colors.white,
             fontSize: 20
@@ -142,11 +144,37 @@ class _SavedPageState extends State<SavedPageWidget> {
     Map<int, dynamic> data = (isTv ? savedTv?.asMap() : savedMovie?.asMap()) ?? Map();
     if (data.isEmpty) {
       return Center(
-        child: Text('Nothing yet :(',
-          style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey
-          ),),
+        child: Wrap(
+          spacing: 15,
+          direction: Axis.vertical,
+          children: <Widget>[
+            Text('Nothing yet :(',
+                style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey
+                )
+            ),
+            GestureDetector(
+              child: Padding(
+                padding: EdgeInsets.all(7.5),
+                child: Wrap(
+                  spacing: 3,
+                  direction: Axis.horizontal,
+                  children: <Widget>[
+                    Icon(Icons.add, color: Colors.redAccent, size: 16),
+                    Text('add item',
+                        style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.redAccent
+                        )
+                    )
+                  ],
+                ),
+              ),
+              onTap: widget._onSearch,
+            )
+          ],
+        ),
       );
     } else {
       return NotificationListener(
@@ -478,10 +506,12 @@ class _SavedPageState extends State<SavedPageWidget> {
           );
         }
     ).then((progress){
-      setState(() {
-        tv.progress = progress;
-        tv.insert();
-      });
+      if (progress != null) {
+        setState(() {
+          tv.progress = progress;
+          tv.insert();
+        });
+      }
     });
   }
 }
