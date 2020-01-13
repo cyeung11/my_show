@@ -1,14 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:my_show/model/show.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/movie_list_response.dart';
-import 'package:my_show/page/movie_details_page.dart';
-import 'package:my_show/page/tv_details_page.dart';
 import 'package:my_show/pageview_page/page_manager/search_page_manager.dart';
-
-import '../asset_path.dart';
+import 'package:my_show/pageview_page/show_widget_builder.dart';
 
 class SearchPageWidget extends StatefulWidget{
 
@@ -168,7 +164,7 @@ class _SearchPageState extends State<SearchPageWidget> {
         color: Colors.white30,
         context: context,
         tiles: widget._pageManager.shows.map((Show currentMovie){
-          return _movieEntry(context, currentMovie);
+          return ShowWidgetBuilder.buildShowEntry(context, currentMovie);
         })
     ).toList();
 
@@ -194,69 +190,6 @@ class _SearchPageState extends State<SearchPageWidget> {
           return false;
         },
       ),
-    );
-  }
-
-  Widget _posterImage(String path){
-    if (path?.isNotEmpty == true) {
-      return CachedNetworkImage(
-          imageUrl: (SMALL_IMAGE_PREFIX + path),
-          fit: BoxFit.contain,
-          height: 156, width: 104,
-          placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER)
-      );
-    } else {
-      return Image(image: AssetImage(POSTER_PLACEHOLDER),
-        fit: BoxFit.contain,
-        height: 156, width: 104,);
-    }
-  }
-
-  Widget _movieEntry(BuildContext context, Show movie){
-    return InkWell(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-        child: Row(
-          children: <Widget>[
-            SizedBox(
-              height: 156, width: 104,
-              child:  _posterImage(movie.poster),
-            ),
-            SizedBox(width: 8,),
-            Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      (movie.title ?? movie.name),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16.0,
-                      ),
-                    ),
-                    SizedBox(height: 5,),
-                    Text(
-                      ((movie.release ?? movie.firstAir) ?? ''),
-                      style: TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12.0,
-                      ),
-                    ),
-                  ],
-                )
-            ),
-          ],
-        ),
-      ),
-      onTap: () {
-        Navigator.of(context).push(
-            MaterialPageRoute(
-                builder: (BuildContext _) {
-                  return movie.isMovie() ? MovieDetailPage(movie.id) : TvDetailPage(movie.id);
-                }
-            )
-        );
-      },
     );
   }
 

@@ -205,7 +205,7 @@ class _TvPageState extends DetailPageState<TvDetailPage>{
       if (detail.episodeRunTime?.isNotEmpty == true) {
         listChild.add(Padding(
                 padding: EdgeInsets.only(left: 20, right: 20, top: 10),
-                child: Text('Episode Runtime: ${detail.episodeRunTime.first}',
+                child: Text('Episode Runtime: ${detail.episodeRunTime.first} mins',
                     style: TextStyle(
                       fontSize: 16.0,
                       color: Colors.grey,
@@ -241,20 +241,22 @@ class _TvPageState extends DetailPageState<TvDetailPage>{
 
           listChild.add(Padding(
             padding: EdgeInsets.only(left: 30, right: 30, top: 10),
-            child: Text('First Air: ${s.airDate}',
+            child: Text('First Air: ${s.airDate ?? 'TDC'}',
                 style: TextStyle(
                   fontSize: 16.0,
                   color: Colors.grey,
                 )),
           ));
-          listChild.add(Padding(
-            padding: EdgeInsets.only(left: 30, right: 30, top: 10),
-            child: Text('No. of Episode: ${s.episodeCount}',
-                style: TextStyle(
-                  fontSize: 16.0,
-                  color: Colors.grey,
-                )),
-          ));
+          if ((s.episodeCount ?? 0) > 0) {
+            listChild.add(Padding(
+                        padding: EdgeInsets.only(left: 30, right: 30, top: 10),
+                        child: Text('No. of Episode: ${s.episodeCount}',
+                            style: TextStyle(
+                              fontSize: 16.0,
+                              color: Colors.grey,
+                            )),
+                      ));
+          }
         }
       });
     }

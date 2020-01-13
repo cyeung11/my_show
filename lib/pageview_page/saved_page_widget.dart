@@ -1,16 +1,14 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:my_show/model/movie_details.dart';
 import 'package:my_show/model/tv_details.dart';
 import 'package:my_show/model/watch_progress.dart';
-import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 import 'package:my_show/page/movie_details_page.dart';
 import 'package:my_show/page/tv_details_page.dart';
 import 'package:my_show/pageview_page/page_manager/saved_page_manager.dart';
+import 'package:my_show/pageview_page/show_widget_builder.dart';
 import 'package:my_show/widget/episode_select_dialog.dart';
 
-import '../asset_path.dart';
 import '../storage/pref_helper.dart';
 
 class SavedPageWidget extends StatefulWidget{
@@ -199,20 +197,9 @@ class _SavedPageState extends State<SavedPageWidget> {
   }
 
   Widget _posterImage(BuildContext context, bool isTv, String path, int id){
-    var child = path?.isNotEmpty == true
-        ? CachedNetworkImage(
-        imageUrl: (SMALL_IMAGE_PREFIX + path),
-        fit: BoxFit.contain,
-        height: 156, width: 104,
-        placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER)
-    )
-        : Image(image: AssetImage(POSTER_PLACEHOLDER),
-      fit: BoxFit.contain,
-      height: 156, width: 104,);
-
     return SizedBox(
       height: 162, width: 104,
-      child: isTv ? wrapWithInkWellToDetail(context, child, true, id) : child,
+      child: isTv ? wrapWithInkWellToDetail(context, ShowWidgetBuilder.buildPosterImage(path), true, id) : ShowWidgetBuilder.buildPosterImage(path),
     );
   }
 
@@ -434,19 +421,20 @@ class _SavedPageState extends State<SavedPageWidget> {
     var isFirst = tv.progress?.seasonNo == 1 && tv.progress?.episodeNo == 1;
     List<Widget> widgetList = List<Widget>();
     if (!widget._pageManager.deleteMode) {
-      widgetList.add(IconButton(
-        icon: Icon(Icons.add),
-        color: Colors.white,
-        disabledColor: Colors.grey,
-        onPressed: isLast
-            ? null
-            : (){
-          setState(() {
-            tv.progress = tv.progress.next(tv.seasons);
-            tv.insert();
-          });
-        },
-      ));
+      widgetList.add(
+          IconButton(
+            icon: Icon(Icons.remove),
+            color: Colors.white,
+            disabledColor: Colors.grey,
+            onPressed: isFirst
+                ? null
+                : (){
+              setState(() {
+                tv.progress = tv.progress.previous(tv.seasons);
+                tv.insert();
+              });
+            },
+          ));
     }
     if (widget._pageManager.deleteMode) {
       widgetList.add(Text(
@@ -478,14 +466,14 @@ class _SavedPageState extends State<SavedPageWidget> {
       ));
       widgetList.add(
           IconButton(
-            icon: Icon(Icons.remove),
+            icon: Icon(Icons.add),
             color: Colors.white,
             disabledColor: Colors.grey,
-            onPressed: isFirst
+            onPressed: isLast
                 ? null
                 : (){
               setState(() {
-                tv.progress = tv.progress.previous(tv.seasons);
+                tv.progress = tv.progress.next(tv.seasons);
                 tv.insert();
               });
             },

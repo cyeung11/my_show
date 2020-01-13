@@ -129,6 +129,7 @@ abstract class DetailPageState <T extends StatefulWidget> extends State<T> {
         style: TextStyle(
           fontSize: 16.0,
           color: Colors.grey,
+          fontStyle: FontStyle.italic,
         )
     );
   }
@@ -376,7 +377,7 @@ abstract class DetailPageState <T extends StatefulWidget> extends State<T> {
                 height: 165, width: 110),
             Padding(
               padding: EdgeInsets.only(left: 5, right: 5, top: 5),
-              child: Text((show.title ?? show.originalTitle), style: TextStyle(color: Colors.white, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis,),
+              child: Text((show.isMovie() ? (show.title ?? show.originalTitle) : show.name) ?? '', style: TextStyle(color: Colors.white, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis,),
             ),
           ],
         ),
