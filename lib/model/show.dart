@@ -45,22 +45,22 @@ class Show {
     );
   }
 
-  Map<String, dynamic> toJson(Show instance) => <String, dynamic>{
-    'id': instance.id,
-    'title': instance.title,
-    'name': instance.name,
-    'original_title': instance.originalTitle,
-    'overview': instance.overview,
-    'original_language': instance.language,
-    'release_date': instance.release,
-    'first_air_date': instance.firstAir,
-    'genre_ids': instance.genres,
-    'adult': instance.adult,
-    'backdrop_path': instance.backdrop,
-    'poster_path': instance.poster,
-    'popularity': instance.popularity,
-    'vote_count': instance.voteCount,
-    'vote_average': instance.votePoint,
-    'video': instance.video,
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': id,
+    'title': title,
+    'name': name,
+    'original_title': originalTitle,
+    'overview': overview,
+    'original_language': language,
+    'release_date': release,
+    'first_air_date': firstAir,
+    'genre_ids': genres,
+    'adult': adult,
+    'backdrop_path': backdrop,
+    'poster_path': poster,
+    'popularity': popularity,
+    'vote_count': voteCount,
+    'vote_average': votePoint,
+    'video': video,
   };
 }

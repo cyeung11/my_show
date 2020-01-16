@@ -19,11 +19,18 @@ class SearchPageWidget extends StatefulWidget{
 class _SearchPageState extends State<SearchPageWidget> {
 
   ScrollController _scrollController;
+  TextEditingController _textEditingController;
+  FocusNode _focus;
 
   @override
   void initState() {
     super.initState();
     resetScrollController();
+    _textEditingController = TextEditingController();
+    _focus = FocusNode();
+    _focus.addListener(() =>
+      setState(() {})
+    );
   }
 
   resetScrollController(){
@@ -40,7 +47,7 @@ class _SearchPageState extends State<SearchPageWidget> {
             child: Column(
               children: <Widget>[
                 _searchTextBox(widget._pageManager.isTv),
-                buildResultList(context)
+                _buildResultList(context)
               ],
             )
         ),
@@ -51,6 +58,8 @@ class _SearchPageState extends State<SearchPageWidget> {
   @override
   dispose() {
     _scrollController.dispose();
+    _textEditingController.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -75,13 +84,13 @@ class _SearchPageState extends State<SearchPageWidget> {
       children: <Widget>[
         Expanded(
           child: Container(
-            margin: EdgeInsets.only(left: 16, right: 2, top: 5, bottom: 5),
+            margin: EdgeInsets.only(left: 16, right: 2, top: 5, bottom: 3),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(50),
             ),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.only(left: 16, right: 3),
               child: Row(
                 children: <Widget>[
                   Icon(
@@ -92,6 +101,8 @@ class _SearchPageState extends State<SearchPageWidget> {
                   ),
                   Expanded(
                     child: TextField(
+                      controller: _textEditingController,
+                      focusNode: _focus,
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 16,
@@ -102,7 +113,12 @@ class _SearchPageState extends State<SearchPageWidget> {
                       ),
                       textInputAction: TextInputAction.search,
                       onChanged: (query){
+                        final wasEmpty = widget._pageManager.query?.isEmpty != false;
                         widget._pageManager.query = query.trim();
+                        final isEmpty = widget._pageManager.query?.isEmpty != false;
+                        if (wasEmpty != isEmpty) {
+                          setState(() {});
+                        }
                       },
                       maxLines: 1,
                       onSubmitted: (query){
@@ -112,14 +128,23 @@ class _SearchPageState extends State<SearchPageWidget> {
                             widget._pageManager.resetLoad();
                             resetScrollController();
                           });
-
                           getShows(!isTv ? SEARCH_MOVIE : SEARCH_TV, widget._pageManager.query, widget._pageManager.currentPage, searchingMovie: !isTv).then((data){
                             onDataReturn(data);
                           });
                         }
+                        _focus.unfocus();
                       },
                     ),
-                  )
+                  ),
+                  if (_focus.hasFocus && widget._pageManager.query?.isNotEmpty == true)
+                    IconButton(icon: Icon(
+                      Icons.cancel, size: 16, color: Colors.grey,
+                    ), onPressed: (){
+                      setState(() {
+                        _textEditingController.text = '';
+                        widget._pageManager.query = '';
+                      });
+                    }),
                 ],
               ),
             ),
@@ -151,7 +176,7 @@ class _SearchPageState extends State<SearchPageWidget> {
     );
   }
 
-  Widget buildResultList(BuildContext context){
+  Widget _buildResultList(BuildContext context){
     if (widget._pageManager.shows.isEmpty) {
       if (widget._pageManager.isLoading) {
         return Padding(padding: EdgeInsets.only(top: 10), child: CircularProgressIndicator());

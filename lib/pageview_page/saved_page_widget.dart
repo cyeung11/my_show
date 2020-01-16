@@ -199,7 +199,7 @@ class _SavedPageState extends State<SavedPageWidget> {
   Widget _posterImage(BuildContext context, bool isTv, String path, int id){
     return SizedBox(
       height: 162, width: 104,
-      child: isTv ? wrapWithInkWellToDetail(context, ShowWidgetBuilder.buildPosterImage(path), true, id) : ShowWidgetBuilder.buildPosterImage(path),
+      child: isTv ? wrapWithInkWellToDetail(context, ShowWidgetBuilder.buildImage(path), true, id) : ShowWidgetBuilder.buildImage(path),
     );
   }
 

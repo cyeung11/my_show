@@ -1,13 +1,11 @@
-class Crew {
+import 'package:my_show/model/people.dart';
+
+class Crew extends People {
     final String creditId;
     final String department;
-    final int gender;
-    final int id;
     String job;
-    final String name;
-    final String profilePath;
 
-    Crew({this.creditId, this.department, this.gender, this.id, this.job, this.name, this.profilePath});
+    Crew({this.creditId, this.department, int gender, int id, this.job, String name, String profilePath}) : super(id, name, profilePath, gender);
 
     factory Crew.fromJson(Map<String, dynamic> json) {
         return Crew(

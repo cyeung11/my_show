@@ -11,7 +11,7 @@ import '../asset_path.dart';
 
 class ShowWidgetBuilder {
 
-  static Widget buildPosterImage(String path){
+  static Widget buildImage(String path){
     if (path?.isNotEmpty == true) {
       return CachedNetworkImage(
           imageUrl: (SMALL_IMAGE_PREFIX + path),
@@ -26,45 +26,55 @@ class ShowWidgetBuilder {
     }
   }
 
-  static Widget buildShowEntry(BuildContext context, Show show){
-    List<Genre> genreList = show.isMovie() ? PrefHelper.instance.movieGenres : PrefHelper.instance.tvGenres;
-    var stringBuilder = StringBuffer();
-    show.genres.forEach((g){
-      var match = genreList.firstWhere((all) => all.id == g, orElse: () => null);
-      if (match?.name?.isNotEmpty == true) {
-        if (stringBuilder.isNotEmpty) {
-          stringBuilder.write(', ');
-        }
-        stringBuilder.write(match.name);
-      }
-    });
-
+  static Widget buildShowEntry(BuildContext context, Show show, {bool forPeople = false, List<Widget> extraText}){
     var entryDetails = List<Widget>();
+    var name = show.title ?? show.name;
+    if (forPeople) {
+      name = name + (show.isMovie() ? ' (Movie)' : ' (TV)');
+    }
     entryDetails.add(Text(
-      (show.title ?? show.name),
+      name,
       style: TextStyle(
         color: Colors.white,
         fontSize: 17.0,
       ),
     ));
     entryDetails.add(SizedBox(height: 8));
-    entryDetails.add(Text(stringBuilder.toString(),
-        style: TextStyle(
-          fontSize: 12.0,
-          color: Colors.grey,
-          fontStyle: FontStyle.italic,
-        )
-    ));
-    entryDetails.add(SizedBox(height: 5));
-    entryDetails.add(Text(
-      show.isMovie() ? show.release : 'Since:  ${show.firstAir}',
-      style: TextStyle(
-        color: Colors.grey,
-        fontSize: 12.0,
-      ),
-    ));
-    entryDetails.add(SizedBox(height: 8));
-    if ((show.votePoint ?? 0) != 0){
+
+    if (!forPeople) {
+      List<Genre> genreList = show.isMovie() ? PrefHelper.instance.movieGenres : PrefHelper.instance.tvGenres;
+      var stringBuilder = StringBuffer();
+      show.genres.forEach((g){
+        var match = genreList.firstWhere((all) => all.id == g, orElse: () => null);
+        if (match?.name?.isNotEmpty == true) {
+          if (stringBuilder.isNotEmpty) {
+            stringBuilder.write(', ');
+          }
+          stringBuilder.write(match.name);
+        }
+      });
+      entryDetails.add(Text(stringBuilder.toString(),
+          style: TextStyle(
+            fontSize: 12.0,
+            color: Colors.grey,
+            fontStyle: FontStyle.italic,
+          )
+      ));
+      entryDetails.add(SizedBox(height: 5));
+    }
+
+    var date =  show.isMovie() ? (show.release ?? '') : (show.firstAir?.isNotEmpty == true ? 'Since: ${show.firstAir}' : '');
+    if (date.isNotEmpty == true) {
+      entryDetails.add(Text(
+            date,
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 12.0,
+            ),
+          ));
+      entryDetails.add(SizedBox(height: 8));
+    }
+    if (!forPeople && (show.votePoint ?? 0) != 0){
       MaterialColor color;
       if (show.votePoint >= 6.5)
         color = Colors.green;
@@ -87,6 +97,9 @@ class ShowWidgetBuilder {
         ),
       ));
     }
+    if (extraText?.isNotEmpty == true) {
+      entryDetails.addAll(extraText);
+    }
 
     return InkWell(
       child: Padding(
@@ -95,7 +108,7 @@ class ShowWidgetBuilder {
           children: <Widget>[
             SizedBox(
               height: 156, width: 104,
-              child:  buildPosterImage(show.poster),
+              child:  buildImage(show.poster),
             ),
             SizedBox(width: 8,),
             Expanded(

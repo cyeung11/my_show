@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:my_show/model/cast_detail.dart';
 import 'package:my_show/model/genre.dart';
 import 'package:my_show/model/media.dart';
 import 'package:my_show/model/movie_details.dart';
@@ -8,6 +9,7 @@ import 'package:my_show/model/sort.dart';
 import 'package:my_show/model/tv_details.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/api_key.dart';
+import 'package:my_show/network/response/combined_credit_response.dart';
 import 'package:my_show/network/response/credit_response.dart';
 import 'package:my_show/network/response/genre_list_response.dart';
 
@@ -31,7 +33,9 @@ Future<ShowListResponse> getShows(String path, String query, int page, {bool sea
     final response = await http.get(Uri.https(DOMAIN, path, queryParameters));
 
     if (response.statusCode == 200) {
-      return ShowListResponse.fromMap(json.decode(response.body));
+      var shows = ShowListResponse.fromMap(json.decode(response.body));
+      shows.removeAdult();
+      return shows;
     } else {
       return null;
     }
@@ -71,7 +75,9 @@ Future<ShowListResponse> discover(bool forTv, int year, double voteAverage, Genr
     final response = await http.get(Uri.https(DOMAIN, forTv ? DISCOVER_TV : DISCOVER_MOVIE, queryParameters));
 
     if (response.statusCode == 200) {
-      return ShowListResponse.fromMap(json.decode(response.body));
+      var shows = ShowListResponse.fromMap(json.decode(response.body));
+      shows.removeAdult();
+      return shows;
     } else {
       return null;
     }
@@ -160,6 +166,48 @@ Future<ShowMedia> getMedia(String path) async {
     final response = await http.get(Uri.https(DOMAIN, path, queryParameters));
     if (response.statusCode == 200) {
       return ShowMedia.fromJson(json.decode(response.body));
+    } else {
+      return null;
+    }
+  } catch (e) {
+    return null;
+  }
+}
+
+
+Future<CastDetail> getPeopleDetail(int id) async {
+
+  var queryParameters = {
+    'api_key': API_KEY_V3,
+  };
+
+  try {
+    final response = await http.get(Uri.https(DOMAIN, GET_PEOPLE_DETAIL + id.toString(), queryParameters));
+    if (response.statusCode == 200) {
+      var people = CastDetail.fromJson(json.decode(response.body));
+      return people;
+    } else {
+      return null;
+    }
+  } catch (e) {
+    return null;
+  }
+}
+
+Future<CombinedCreditResponse> getPeopleShow(int id) async {
+
+  var queryParameters = {
+    'api_key': API_KEY_V3,
+  };
+
+  try {
+    final response = await http.get(Uri.https(DOMAIN, GET_PEOPLE_DETAIL + id.toString() + COMBINE_CREDIT, queryParameters));
+    if (response.statusCode == 200) {
+      var peopleShow = CombinedCreditResponse.fromMap(json.decode(response.body));
+      peopleShow?.removeAdult();
+      peopleShow?.mergeDuplicate();
+      peopleShow?.sortByDate();
+      return peopleShow;
     } else {
       return null;
     }

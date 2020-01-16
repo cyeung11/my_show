@@ -1,14 +1,12 @@
-class Cast {
+import 'package:my_show/model/people.dart';
+
+class Cast extends People {
     int castId;
     String character;
     String creditId;
-    int gender;
-    int id;
-    String name;
     int order;
-    String profilePath;
 
-    Cast({this.castId, this.character, this.creditId, this.gender, this.id, this.name, this.order, this.profilePath});
+    Cast({this.castId, this.character, this.creditId, int gender, int id, String name, this.order, String profilePath}) : super(id, name, profilePath, gender);
 
     factory Cast.fromJson(Map<String, dynamic> json) {
         return Cast(

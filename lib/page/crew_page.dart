@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:my_show/model/crew.dart';
 import 'package:my_show/network/api_constant.dart';
+import 'package:my_show/page/people_detail_page.dart';
 
 import '../asset_path.dart';
 
@@ -51,46 +52,55 @@ class CrewPage extends StatelessWidget{
   }
 
   Widget _crewEntry(BuildContext context, Crew crew) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-      child: Row(
-        children: <Widget>[
-          SizedBox(
-            height: 150, width: 100,
-            child:  _profilePic(crew.profilePath),
-          ),
-          SizedBox(width: 8,),
-          Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    (crew.name ?? ''),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16.0,
+    return InkWell(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+        child: Row(
+          children: <Widget>[
+            SizedBox(
+              height: 150, width: 100,
+              child:  _profilePic(crew.profilePath),
+            ),
+            SizedBox(width: 8,),
+            Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      (crew.name ?? ''),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16.0,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 5,),
-                  Text(
-                    (crew.job ?? ''),
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 12.0,
+                    SizedBox(height: 5,),
+                    Text(
+                      (crew.job ?? ''),
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12.0,
+                      ),
                     ),
-                  ),
-                ],
-              )
-          ),
-        ],
+                  ],
+                )
+            ),
+          ],
+        ),
       ),
+      onTap: (){
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) {
+              return PeopleDetailPage(crew);
+            }
+        ));
+      },
     );
   }
 
   Widget _profilePic(String path){
     if (path?.isNotEmpty == true) {
       return CachedNetworkImage(
-          imageUrl: (PROFILE_IMAGE_PREFIX_HD + path),
+          imageUrl: (PROFILE_IMAGE_PREFIX + path),
           fit: BoxFit.contain,
           height: 150, width: 100,
           placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER)

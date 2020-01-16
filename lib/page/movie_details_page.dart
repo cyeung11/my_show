@@ -262,9 +262,8 @@ class _MovieDetailPageState extends DetailPageState<MovieDetailPage>{
       ));
     }
 
-    listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
-
     if (similar?.isNotEmpty == true) {
+      listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
       listChild.addAll(buildSimilar());
     }
 

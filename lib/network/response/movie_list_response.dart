@@ -25,4 +25,8 @@ class ShowListResponse extends BaseResponse{
         json['status_code']
     );
   }
+
+  removeAdult(){
+    result?.removeWhere((r) => r.adult == true);
+  }
 }

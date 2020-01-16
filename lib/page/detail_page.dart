@@ -9,6 +9,7 @@ import 'package:my_show/model/details.dart';
 import 'package:my_show/model/show.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
+import 'package:my_show/page/people_detail_page.dart';
 import 'package:my_show/widget/DetailPhotoList.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
@@ -242,35 +243,44 @@ abstract class DetailPageState <T extends StatefulWidget> extends State<T> {
     listChild.add(Container(
       height: 120,
       margin: EdgeInsets.symmetric(vertical: 10),
-      child: DetailPhotoList(images, min(3, images.length), 200, 120),
+      child: DetailPhotoList(images, min(4, images.length), 200, 120),
     ));
 
     return listChild;
   }
 
   Widget _castBox(BuildContext context, Cast cast) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 5, vertical: 10),
-      color: Color.fromARGB(255, 40, 40, 40),
-      width: 110, height: 230,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          CachedNetworkImage(imageUrl: PROFILE_IMAGE_PREFIX + (cast.profilePath ?? ''),
-              fit: BoxFit.cover,
-              placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
-              height: 165, width: 110),
-          Padding(
-            padding: EdgeInsets.only(left: 5, right: 5, top: 5),
-            child: Text(cast.name, style: TextStyle(color: Colors.white, fontSize: 12),),
-          ),
-          Spacer(),
-          Padding(
-            padding: EdgeInsets.only(left: 5, right: 5, bottom: 5),
-            child: Text(cast.character, style: TextStyle(color: Colors.grey, fontSize: 11),),
-          )
-        ],
+    return GestureDetector(
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+        color: Color.fromARGB(255, 40, 40, 40),
+        width: 110, height: 230,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            CachedNetworkImage(imageUrl: PROFILE_IMAGE_PREFIX + (cast.profilePath ?? ''),
+                fit: BoxFit.cover,
+                placeholder: (context, _) => Image.asset(POSTER_PLACEHOLDER),
+                height: 165, width: 110),
+            Padding(
+              padding: EdgeInsets.only(left: 5, right: 5, top: 5),
+              child: Text(cast.name, style: TextStyle(color: Colors.white, fontSize: 12), maxLines: 2, overflow: TextOverflow.fade),
+            ),
+            Spacer(),
+            Padding(
+              padding: EdgeInsets.only(left: 5, right: 5, bottom: 5),
+              child: Text(cast.character, style: TextStyle(color: Colors.grey, fontSize: 11), maxLines: 2, overflow: TextOverflow.fade),
+            )
+          ],
+        ),
       ),
+      onTap: (){
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) {
+              return PeopleDetailPage(cast);
+            }
+        ));
+      }
     );
   }
 
@@ -377,7 +387,7 @@ abstract class DetailPageState <T extends StatefulWidget> extends State<T> {
                 height: 165, width: 110),
             Padding(
               padding: EdgeInsets.only(left: 5, right: 5, top: 5),
-              child: Text((show.isMovie() ? (show.title ?? show.originalTitle) : show.name) ?? '', style: TextStyle(color: Colors.white, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis,),
+              child: Text((show.isMovie() ? (show.title ?? show.originalTitle) : show.name) ?? '', style: TextStyle(color: Colors.white, fontSize: 12), maxLines: 3, overflow: TextOverflow.ellipsis,),
             ),
           ],
         ),
@@ -448,7 +458,7 @@ abstract class DetailPageState <T extends StatefulWidget> extends State<T> {
           )),
     ));
     listChild.add(Container(
-      height: 230,
+      height: 235,
       child: ListView.builder(
           padding: EdgeInsets.symmetric(horizontal: 16),
           itemCount: similar.length,
