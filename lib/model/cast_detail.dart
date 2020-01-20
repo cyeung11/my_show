@@ -19,7 +19,7 @@ class CastDetail {
     factory CastDetail.fromJson(Map<String, dynamic> json) {
         return CastDetail(
             adult: json['adult'], 
-            alias: json['also_known_as'] != null ? new List<String>.from(json['also_known_as']) : null,
+            alias: json['also_known_as'] != null ? List<String>.from(json['also_known_as']) : null,
             biography: json['biography'], 
             birthday: json['birthday'], 
             deathDay: json['deathday'],
@@ -36,7 +36,7 @@ class CastDetail {
     }
 
     Map<String, dynamic> toJson() {
-        final Map<String, dynamic> data = new Map<String, dynamic>();
+        final Map<String, dynamic> data =  Map<String, dynamic>();
         data['adult'] = this.adult;
         data['biography'] = this.biography;
         data['birthday'] = this.birthday;

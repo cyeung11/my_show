@@ -1,11 +1,11 @@
 
 import 'dart:convert';
 
-import 'package:my_show/storage/database_helper.dart';
 import 'package:my_show/model/details.dart';
 import 'package:my_show/model/episode.dart';
 import 'package:my_show/model/role.dart';
 import 'package:my_show/model/watch_progress.dart';
+import 'package:my_show/storage/database_helper.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'genre.dart';
@@ -44,13 +44,13 @@ class TvDetails extends Details {
         return TvDetails(
             backdropPath: json['backdrop_path'],
             createdBy: json['created_by'] != null ? (json['created_by'] as List).map((i) => Person.fromJson(i)).toList() : null,
-            episodeRunTime: json['episode_run_time'] != null ? new List<int>.from(json['episode_run_time']) : null,
+            episodeRunTime: json['episode_run_time'] != null ? List<int>.from(json['episode_run_time']) : null,
             firstAirDate: json['first_air_date'],
             genres: json['genres'] != null ? (json['genres'] as List).map((i) => Genre.fromMap(i)).toList() : null,
             homePage: json['homepage'],
             id: json['id'],
             inProduction: json['in_production'],
-            languages: json['languages'] != null ? new List<String>.from(json['languages']) : null,
+            languages: json['languages'] != null ? List<String>.from(json['languages']) : null,
             lastAirDate: json['last_air_date'],
             lastEpisodeAir: json['last_episode_to_air'] != null ? Episode.fromJson(json['last_episode_to_air']) : null,
             name: json['name'],
@@ -58,7 +58,7 @@ class TvDetails extends Details {
             nextEpisodeAir: json['next_episode_to_air'] != null ? Episode.fromJson(json['next_episode_to_air']) : null,
             noEpisodes: json['number_of_episodes'],
             noSeasons: json['number_of_seasons'],
-            originCountry: json['origin_country'] != null ? new List<String>.from(json['origin_country']) : null,
+            originCountry: json['origin_country'] != null ? List<String>.from(json['origin_country']) : null,
             originalLanguage: json['original_language'],
             originalName: json['original_name'],
             overview: json['overview'],

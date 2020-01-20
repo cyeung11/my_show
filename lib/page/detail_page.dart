@@ -10,7 +10,7 @@ import 'package:my_show/model/show.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 import 'package:my_show/page/people_detail_page.dart';
-import 'package:my_show/widget/DetailPhotoList.dart';
+import 'package:my_show/widget/detail_photo_list.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 
 import '../asset_path.dart';
@@ -98,6 +98,7 @@ abstract class DetailPageState <T extends StatefulWidget> extends State<T> {
       child: Text(detail.overview ?? "",
           style: TextStyle(
             fontSize: 16.0,
+            height: 1.4,
             color: Colors.white,
           )
       ),
@@ -117,7 +118,7 @@ abstract class DetailPageState <T extends StatefulWidget> extends State<T> {
       radius: 40.0,
       lineWidth: 4.0,
       percent: detail.voteAverage / 10,
-      center: new Text(detail.voteAverage.toString(),
+      center: Text(detail.voteAverage.toString(),
         style: TextStyle(fontSize: 12.0, color: Colors.white,),
       ),
       backgroundColor: Colors.grey,

@@ -12,7 +12,7 @@ class SpokenLanguage {
   }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
+    final Map<String, dynamic> data = Map<String, dynamic>();
     data['iso_639_1'] = this.iso_639_1;
     data['name'] = this.name;
     return data;

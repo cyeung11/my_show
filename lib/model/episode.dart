@@ -30,7 +30,7 @@ class Episode {
     }
 
     Map<String, dynamic> toJson() {
-        final Map<String, dynamic> data = new Map<String, dynamic>();
+        final Map<String, dynamic> data = Map<String, dynamic>();
         data['air_date'] = this.airDate;
         data['episode_number'] = this.episodeNo;
         data['id'] = this.id;

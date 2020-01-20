@@ -77,19 +77,19 @@ class _TvPageState extends DetailPageState<TvDetailPage>{
 
   Widget _headerImage(TvDetails tv){
     return buildHeaderImage(tv, IconButton(
-      icon: Icon(_isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
-      onPressed: () {
-        var future = _isFav
-            ? PrefHelper.instance.removeTv(widget.id)
-            : PrefHelper.instance.addTv(tv);
-        future.then((result) {
-          if (result) {
-            setState(() {
-              _isFav = !_isFav;
-            });
-          }
-        });
-      }
+        icon: Icon(_isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
+        onPressed: () {
+          var future = _isFav
+              ? PrefHelper.instance.removeTv(widget.id)
+              : PrefHelper.instance.addTv(tv);
+          future.then((result) {
+            if (result) {
+              setState(() {
+                _isFav = !_isFav;
+              });
+            }
+          });
+        }
     ));
   }
 
@@ -107,13 +107,20 @@ class _TvPageState extends DetailPageState<TvDetailPage>{
     );
 
     var timeSpanBuffer = StringBuffer();
-    timeSpanBuffer.write(Details.parseDate(detail.firstAirDate)?.year?.toString() ?? '');
-    if (detail.inProduction == true) {
-      timeSpanBuffer.write(' - present');
-    } else {
-      timeSpanBuffer.write(' - ');
-      timeSpanBuffer.write(Details.parseDate(detail.lastAirDate)?.year?.toString() ?? '');
+    var first = Details.parseDate(detail.firstAirDate);
+    if (first != null) {
+      timeSpanBuffer.write(first?.year?.toString() ?? '');
+      if (detail.inProduction == true) {
+        timeSpanBuffer.write(' - present');
+      } else {
+        var last = Details.parseDate(detail.lastAirDate);
+        if (last != null && last.year != first.year) {
+          timeSpanBuffer.write(' - ');
+          timeSpanBuffer.write(last?.year?.toString() ?? '');
+        }
+      }
     }
+
     var releaseWidget = Row(
       children: <Widget>[
         Text(timeSpanBuffer.toString(),
@@ -193,72 +200,88 @@ class _TvPageState extends DetailPageState<TvDetailPage>{
 
       if (detail.noEpisodes != null) {
         listChild.add(Padding(
-                padding: EdgeInsets.only(left: 20, right: 20, top: 10),
-                child: Text('Total Episode: ${detail.noEpisodes}',
-                    style: TextStyle(
-                      fontSize: 16.0,
-                      color: Colors.grey,
-                    )),
-              ));
+          padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+          child: Text('Total Episode: ${detail.noEpisodes}',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: Colors.grey,
+              )),
+        ));
       }
 
       if (detail.episodeRunTime?.isNotEmpty == true) {
         listChild.add(Padding(
-                padding: EdgeInsets.only(left: 20, right: 20, top: 10),
-                child: Text('Episode Runtime: ${detail.episodeRunTime.first} mins',
-                    style: TextStyle(
-                      fontSize: 16.0,
-                      color: Colors.grey,
-                    )),
-              ));
+          padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+          child: Text('Episode Runtime: ${detail.episodeRunTime.first} mins',
+              style: TextStyle(
+                fontSize: 16.0,
+                color: Colors.grey,
+              )),
+        ));
       }
+    }
+
+    if (detail.nextEpisodeAir?.airDate?.isNotEmpty == true) {
+      listChild.add(Padding(
+        padding: EdgeInsets.only(left: 20, right: 20, top: 10),
+        child: Text('Next Episode in: ${detail.nextEpisodeAir.airDate}',
+            style: TextStyle(
+              fontSize: 16.0,
+              color: Colors.grey,
+            )),
+      ));
     }
 
     if (detail.seasons?.isNotEmpty == true) {
       listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
 
-      listChild.add(Padding(
-        padding: EdgeInsets.only(left: 16, right: 16),
-        child: Text('Seasons',
-            style: TextStyle(
-              fontSize: 20.0,
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            )),
-      ));
+      var episodeList = List<Widget>();
 
       detail.seasons.forEach((s){
         if (s.seasonNo != 0) {
-          listChild.add(Padding(
-            padding: EdgeInsets.only(left: 20, right: 20, top: 10),
-            child: Text(s.name,
+          if (episodeList.isNotEmpty) {
+            episodeList.add(SizedBox(height: 15));
+          }
+
+          episodeList.add(Text(s.name,
                 style: TextStyle(
                   fontSize: 16.0,
                   fontStyle: FontStyle.italic,
                   color: Colors.grey,
                 )),
-          ));
+          );
 
-          listChild.add(Padding(
-            padding: EdgeInsets.only(left: 30, right: 30, top: 10),
-            child: Text('First Air: ${s.airDate ?? 'TDC'}',
+          episodeList.add(SizedBox(height: 7.5));
+
+          episodeList.add(Text('First Air: ${s.airDate ?? 'TDC'}',
                 style: TextStyle(
                   fontSize: 16.0,
                   color: Colors.grey,
                 )),
-          ));
+          );
           if ((s.episodeCount ?? 0) > 0) {
-            listChild.add(Padding(
-                        padding: EdgeInsets.only(left: 30, right: 30, top: 10),
-                        child: Text('No. of Episode: ${s.episodeCount}',
-                            style: TextStyle(
-                              fontSize: 16.0,
-                              color: Colors.grey,
-                            )),
-                      ));
+            episodeList.add(SizedBox(height: 7.5));
+            episodeList.add(Text('No. of Episode: ${s.episodeCount}',
+                  style: TextStyle(
+                    fontSize: 16.0,
+                    color: Colors.grey,
+                  )),
+            );
           }
         }
       });
+
+      listChild.add(
+        ExpansionTile(
+          title: Text('Seasons',
+              style: TextStyle(
+                fontSize: 20.0,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              )),
+          children: episodeList,
+        ),
+      );
     }
 
     if (images?.isNotEmpty == true) {

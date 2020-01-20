@@ -20,7 +20,7 @@ class Crew extends People {
     }
 
     Map<String, dynamic> toJson() {
-        final Map<String, dynamic> data = new Map<String, dynamic>();
+        final Map<String, dynamic> data = Map<String, dynamic>();
         data['credit_id'] = this.creditId;
         data['department'] = this.department;
         data['gender'] = this.gender;

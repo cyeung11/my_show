@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:my_show/widget/DetailPhotoList.dart';
+import 'package:my_show/widget/detail_photo_list.dart';
 
 class MorePhotoPage extends StatelessWidget{
 

@@ -144,14 +144,14 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
   Widget _showDetail(AsyncSnapshot<ShowListResponse> snapshot) {
     var hasMovie = snapshot.connectionState == ConnectionState.done && snapshot?.data?.result?.isNotEmpty == true && ((snapshot?.data?.result?.length ?? -1) > widget._pageManager.currentCarouselPage);
     if (hasMovie) {
-      var currentMovie = snapshot?.data?.result[widget._pageManager.currentCarouselPage];
+      var currentShow = snapshot?.data?.result[widget._pageManager.currentCarouselPage];
       return Expanded(
           child: ClipRect(
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.black,
                 image: DecorationImage(
-                  image: CachedNetworkImageProvider(BACKDROP_IMAGE_PREFIX + (currentMovie.backdrop ?? '')),
+                  image: CachedNetworkImageProvider(BACKDROP_IMAGE_PREFIX + (currentShow.backdrop ?? '')),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -162,19 +162,19 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
                   child: ListView(
                     padding: EdgeInsets.all(12),
                     children: <Widget>[
-                      _title(currentMovie),
+                      _title(currentShow),
                       Padding(
                         padding: EdgeInsets.only(top: 6),
                         child: Text(
-                          currentMovie.release ?? currentMovie.firstAir,
+                          currentShow.isMovie() ? (currentShow.release ?? '') : (currentShow.firstAir?.isNotEmpty == true ? 'Since: ${currentShow.firstAir}' :''),
                           style: TextStyle(fontSize: 14.0, color: Colors.grey,),
                         ),
                       ),
                       Padding(
                         padding: EdgeInsets.only(top: 6),
                         child: Text(
-                          currentMovie.overview,
-                          style: TextStyle(fontSize: 16.0, color: Colors.white,),
+                          currentShow.overview,
+                          style: TextStyle(fontSize: 16.0, color: Colors.white, height: 1.4),
                         ),
                       ),
                       Padding(
@@ -186,7 +186,7 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
                                   icon: Image.asset(BTN_YOUTUBE),
                                   padding: EdgeInsets.all(5),
                                   onPressed: () {
-                                    Details.searchInYoutube(currentMovie.title ?? currentMovie.name);
+                                    Details.searchInYoutube(currentShow.title ?? currentShow.name);
                                   },),
                               ),
                               Padding(
@@ -198,7 +198,7 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
                                     icon: Image.asset(BTN_GOOGLE),
                                     padding: EdgeInsets.all(5),
                                     onPressed: () {
-                                      Details.searchInGoogle(currentMovie.title ?? currentMovie.name);
+                                      Details.searchInGoogle(currentShow.title ?? currentShow.name);
                                     },),
                                 ),
                               ),
@@ -248,7 +248,7 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
             radius: 40.0,
             lineWidth: 4.0,
             percent: currentShow.votePoint / 10,
-            center: new Text(currentShow.votePoint.toString(),
+            center: Text(currentShow.votePoint.toString(),
               style: TextStyle(fontSize: 12.0, color: Colors.white,),
             ),
             backgroundColor: Colors.grey,

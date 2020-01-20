@@ -22,7 +22,7 @@ class Cast extends People {
     }
 
     Map<String, dynamic> toJson() {
-        final Map<String, dynamic> data = new Map<String, dynamic>();
+        final Map<String, dynamic> data = Map<String, dynamic>();
         data['cast_id'] = this.castId;
         data['character'] = this.character;
         data['credit_id'] = this.creditId;

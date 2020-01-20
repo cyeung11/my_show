@@ -37,6 +37,7 @@ class MyApp extends StatelessWidget {
         accentColor: Colors.grey,
         primaryColor: Colors.white,
         canvasColor: Colors.grey,
+        unselectedWidgetColor: Colors.grey,
       ),
       home: HomePage(),
     );

@@ -14,7 +14,7 @@ class ShowMedia {
     }
 
     Map<String, dynamic> toJson() {
-        final Map<String, dynamic> data = new Map<String, dynamic>();
+        final Map<String, dynamic> data = Map<String, dynamic>();
         data['id'] = this.id;
         if (this.backdrops != null) {
             data['backdrops'] = this.backdrops.map((v) => v.toJson()).toList();
@@ -48,7 +48,7 @@ class Image {
     }
 
     Map<String, dynamic> toJson() {
-        final Map<String, dynamic> data = new Map<String, dynamic>();
+        final Map<String, dynamic> data =  Map<String, dynamic>();
         data['aspect_ratio'] = this.aspectRatio;
         data['file_path'] = this.filePath;
         data['height'] = this.height;

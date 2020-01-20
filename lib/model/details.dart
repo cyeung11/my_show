@@ -51,7 +51,7 @@ abstract class Details {
 //  }
 
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
+    final Map<String, dynamic> data = Map<String, dynamic>();
     data['backdrop_path'] = this.backdropPath;
     data['homepage'] = this.homePage;
     data['id'] = this.id;
@@ -73,7 +73,7 @@ abstract class Details {
   }
 
   Map<String, dynamic> toDb() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
+    final Map<String, dynamic> data =  Map<String, dynamic>();
     data['backdrop_path'] = this.backdropPath;
     data['homepage'] = this.homePage;
     data['id'] = this.id;
