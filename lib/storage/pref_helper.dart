@@ -126,7 +126,7 @@ class PrefHelper {
       List<String> savedList = _pref.getStringList(key);
       return savedList.map((string) => Genre.fromMap(jsonDecode(string))).toList();
     } else {
-      return List<Genre>();
+      return List<Genre>.empty(growable: true);
     }
   }
 

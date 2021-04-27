@@ -10,7 +10,7 @@ import '../asset_path.dart';
 
 class CrewPage extends StatelessWidget{
 
-  final List<Crew> crews = List<Crew>();
+  final List<Crew> crews = List<Crew>.empty(growable: true);
   final String name;
 
   CrewPage({@required List<Crew> crews, this.name, Key key}): super(key: key){

@@ -27,7 +27,7 @@ class ShowWidgetBuilder {
   }
 
   static Widget buildShowEntry(BuildContext context, Show show, {bool forPeople = false, List<Widget> extraText}){
-    var entryDetails = List<Widget>();
+    var entryDetails = List<Widget>.empty(growable: true);
     var name = show.title ?? show.name;
     if (forPeople) {
       name = name + (show.isMovie() ? ' (Movie)' : ' (TV)');

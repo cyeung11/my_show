@@ -102,7 +102,7 @@ class _MovieDetailPageState extends DetailPageState<MovieDetailPage>{
       titleBuffer.write(' (${release.year})');
     }
 
-    var listChild = List<Widget>();
+    var listChild = List<Widget>.empty(growable: true);
     listChild.add(_headerImage(detail));
 
     var titleWidget = Text(

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,12 +9,11 @@ import 'package:my_show/storage/database_helper.dart';
 import 'package:my_show/storage/pref_helper.dart';
 
 
-void main(){
+void main() async {
 
-  FlutterError.onError = Crashlytics.instance.recordFlutterError;
-
-  runZoned(() {
-    WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runZonedGuarded(() {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then((_){
       PrefHelper.init().then((pref){
         DatabaseHelper.initDb().then((_){
@@ -21,7 +21,7 @@ void main(){
         });
       });
     });
-  }, onError: Crashlytics.instance.recordError);
+  }, FirebaseCrashlytics.instance.recordError);
 }
 
 class MyApp extends StatelessWidget {

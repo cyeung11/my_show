@@ -242,7 +242,7 @@ class _SavedPageState extends State<SavedPageWidget> {
   }
 
   Widget _movieEntry(BuildContext context, MovieDetails movie){
-    List<Widget> widgetList = List<Widget>();
+    List<Widget> widgetList = List<Widget>.empty(growable: true);
     widgetList.add(SizedBox(width: 12,));
     widgetList.add(_posterImage(context, false, movie.posterPath, movie.id));
     widgetList.add(SizedBox(width: 8,));
@@ -274,7 +274,7 @@ class _SavedPageState extends State<SavedPageWidget> {
           PrefHelper.instance.removeMovie(movie.id).whenComplete((){
             _updateMovie();
           });
-          Scaffold.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text('Item removed'),
                 action: SnackBarAction(
                   label: 'Undo',
@@ -292,7 +292,7 @@ class _SavedPageState extends State<SavedPageWidget> {
   }
 
   Widget _tvEntry(BuildContext context, TvDetails tv){
-    List<Widget> widgetList = List<Widget>();
+    List<Widget> widgetList = List<Widget>.empty(growable: true);
     widgetList.add(SizedBox(width: 12,));
     widgetList.add(_posterImage(context, true, tv.posterPath, tv.id));
     widgetList.add(SizedBox(width: 8,));
@@ -325,7 +325,7 @@ class _SavedPageState extends State<SavedPageWidget> {
                 PrefHelper.instance.removeTv(tv.id).whenComplete((){
                   _updateTv();
                 });
-                Scaffold.of(context).showSnackBar(
+                ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Item removed'),
                       action: SnackBarAction(
                         label: 'Undo',
@@ -388,13 +388,13 @@ class _SavedPageState extends State<SavedPageWidget> {
             title: Text('Remove',),
             content: Text('Do you want to remove this item?'),
             actions: <Widget>[
-              FlatButton(
+              TextButton(
                 child: Text('Cancel'),
                 onPressed: (){
                   Navigator.of(context).pop();
                 },
               ),
-              FlatButton(
+              TextButton(
                 child: Text('Remove',
                   style: TextStyle(color: Colors.redAccent),),
                 onPressed: (){
@@ -419,7 +419,7 @@ class _SavedPageState extends State<SavedPageWidget> {
   Widget _progressRow(BuildContext context, TvDetails tv){
     var isLast = tv.lastEpisodeAir?.seasonNo == tv.progress?.seasonNo && tv.lastEpisodeAir?.episodeNo == tv.progress?.episodeNo;
     var isFirst = tv.progress?.seasonNo == 1 && tv.progress?.episodeNo == 1;
-    List<Widget> widgetList = List<Widget>();
+    List<Widget> widgetList = List<Widget>.empty(growable: true);
     if (!widget._pageManager.deleteMode) {
       widgetList.add(
           IconButton(

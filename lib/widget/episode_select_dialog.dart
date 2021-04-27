@@ -15,7 +15,7 @@ class EpisodeSelectDialog extends StatelessWidget {
   EpisodeSelectDialog({@required this.selectable, @required this.scrollIndex, @required this.currentProgress, Key key}): super(key: key);
 
   factory EpisodeSelectDialog.show({@required List<Season> seasons, WatchProgress currentProgress, Key key}){
-    List<WatchProgress> selectableList = List<WatchProgress>();
+    List<WatchProgress> selectableList = List<WatchProgress>.empty(growable: true);
     int scroll = 0;
 
     int episodeTotalNo = 0;
@@ -97,7 +97,7 @@ class EpisodeSelectDialog extends StatelessWidget {
       );
     }
 
-    var result = List<Widget>();
+    var result = List<Widget>.empty(growable: true);
     result.add(SizedBox(width: 10));
     result.add(Container(
       height: 45,

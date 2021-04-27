@@ -36,7 +36,7 @@ class _PeopleState extends State<PeopleDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    var allCredit = List<CombinedCredit>();
+    var allCredit = List<CombinedCredit>.empty(growable: true);
     if (_credit?.cast?.isNotEmpty == true) {
       allCredit.addAll(_credit.cast);
     }
@@ -46,7 +46,7 @@ class _PeopleState extends State<PeopleDetailPage> {
 
     var tabLength = _credit != null ? (_credit?.crew?.isNotEmpty == true && _credit?.cast?.isNotEmpty == true ? 2 : 1) : 2;
 
-    var listOfTabBar = List<Widget>();
+    var listOfTabBar = List<Widget>.empty(growable: true);
     var castTab = Tab(child: Text('Acting', style: TextStyle(color: Colors.white, fontSize: 16),),);
     var crewTab = Tab(child: Text('Production', style: TextStyle(color: Colors.white),),);
     if (tabLength == 2) {
@@ -58,7 +58,7 @@ class _PeopleState extends State<PeopleDetailPage> {
       listOfTabBar.add(castTab);
     }
 
-    var listOfTabView = List<Widget>();
+    var listOfTabView = List<Widget>.empty(growable: true);
     var castView = _credit?.cast != null ? _creditList(true, _credit?.cast) : Center(child: CircularProgressIndicator(),);
     var crewView = _credit?.crew != null ? _creditList(false, _credit?.crew) : Center(child: CircularProgressIndicator());
     if (tabLength == 2) {
@@ -116,7 +116,7 @@ class _PeopleState extends State<PeopleDetailPage> {
   }
 
   Widget _peopleInfo(BuildContext context){
-    var infoWidgets = List<Widget>();
+    var infoWidgets = List<Widget>.empty(growable: true);
     infoWidgets.add(Text(widget.people.name,
       style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
     ));
@@ -175,7 +175,7 @@ class _PeopleState extends State<PeopleDetailPage> {
                     ],
                   ),
                   actions: <Widget>[
-                    FlatButton(
+                    TextButton(
                       child: Text('OK',
                           style: TextStyle(color: Colors.blueGrey)),
                       onPressed: (){

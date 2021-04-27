@@ -87,6 +87,6 @@ class ShowBackupHelper{
 }
 
 class Backup{
-  final tv = List<TvDetails>();
-  final movies = List<MovieDetails>();
+  final tv = List<TvDetails>.empty(growable: true);
+  final movies = List<MovieDetails>.empty(growable: true);
 }

@@ -198,13 +198,13 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
           title: Text('Backup Found!',),
           content: Text('Do you want to restore from your backup?'),
           actions: <Widget>[
-            FlatButton(
+            TextButton(
               child: Text('Cancel'),
               onPressed: (){
                 Navigator.of(context).pop();
               },
             ),
-            FlatButton(
+            TextButton(
               child: Text('OK',
                 style: TextStyle(color: Colors.blueGrey),),
               onPressed: (){

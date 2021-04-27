@@ -42,7 +42,7 @@ abstract class DetailPageState <T extends StatefulWidget> extends State<T> {
       getMedia(getDetailPath()  + IMAGE).then((response){
         if (response?.backdrops?.isNotEmpty == true) {
           setState(() {
-            images = response.backdrops?.map((bd) => bd.filePath ?? '')?.toList() ?? List();
+            images = response.backdrops?.map((bd) => bd.filePath ?? '')?.toList() ?? List<String>.empty(growable: true);
           });
         }
       });
@@ -162,7 +162,7 @@ abstract class DetailPageState <T extends StatefulWidget> extends State<T> {
   }
 
   List<Widget> buildCrewSection(Details detail, List<Crew> allCrew){
-    var section = List<Widget>();
+    var section = List<Widget>.empty(growable: true);
     section.add(Padding(
         padding: EdgeInsets.only(left: 16, right: 16, top: 10),
         child: Row(
@@ -208,7 +208,7 @@ abstract class DetailPageState <T extends StatefulWidget> extends State<T> {
   }
 
   List<Widget> buildImageSection(){
-    var listChild = List<Widget>();
+    var listChild = List<Widget>.empty(growable: true);
     listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
 
     listChild.add(Padding(
@@ -448,7 +448,7 @@ abstract class DetailPageState <T extends StatefulWidget> extends State<T> {
   }
 
   List<Widget> buildSimilar(){
-    var listChild = List<Widget>();
+    var listChild = List<Widget>.empty(growable: true);
     listChild.add(Padding(
       padding: EdgeInsets.only(left: 16, right: 16, top: 16),
       child: Text('Similar Items',
@@ -491,6 +491,6 @@ abstract class DetailPageState <T extends StatefulWidget> extends State<T> {
       ),
     );
 
-    Scaffold.of(context).showSnackBar(snackBar);
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 }

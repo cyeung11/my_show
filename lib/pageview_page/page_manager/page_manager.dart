@@ -10,7 +10,7 @@ class ScrollablePageManager{
 
   bool isTv = true;
 
-  final List<Show> shows = List<Show>();
+  final List<Show> shows = List<Show>.empty(growable: true);
 
   resetLoad(){
     currentPage = 1;

@@ -94,7 +94,7 @@ class _TvPageState extends DetailPageState<TvDetailPage>{
   }
 
   Widget _buildDetails(TvDetails detail){
-    var listChild = List<Widget>();
+    var listChild = List<Widget>.empty(growable: true);
     listChild.add(_headerImage(detail));
 
     var titleWidget = Text(
@@ -235,7 +235,7 @@ class _TvPageState extends DetailPageState<TvDetailPage>{
     if (detail.seasons?.isNotEmpty == true) {
       listChild.add(Divider(indent: 10, endIndent: 10, height: 40, thickness: 0.5, color: Colors.white30,));
 
-      var episodeList = List<Widget>();
+      var episodeList = List<Widget>.empty(growable: true);
 
       detail.seasons.forEach((s){
         if (s.seasonNo != 0) {

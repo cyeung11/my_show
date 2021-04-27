@@ -50,14 +50,16 @@ class _GalleryPageState extends State<GalleryPage>{
                 _currentPage = i;
               });
             },
-            loadingChild: Container(
-              color: Colors.black,
-              child: Icon(
-                Icons.cloud_off,
-                size: 50,
-                color: Colors.grey,
-              ),
-            ),
+            loadingBuilder: (context, event){
+              return Container(
+                color: Colors.black,
+                child: Icon(
+                  Icons.cloud_off,
+                  size: 50,
+                  color: Colors.grey,
+                ),
+              );
+            },
           )
       ),
     ];

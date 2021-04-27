@@ -2,18 +2,17 @@ package com.jkjk.my_show
 
 import android.os.Bundle
 import android.widget.Toast
-import io.flutter.app.FlutterActivity
-import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugins.GeneratedPluginRegistrant
+import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine;
+import io.flutter.plugins.GeneratedPluginRegistrant;
+import io.flutter.plugin.common.MethodChannel;
 
 class MainActivity: FlutterActivity() {
   private var lastBackPress = 0L
 
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    GeneratedPluginRegistrant.registerWith(this)
-
-    MethodChannel(flutterView, "com.jkjk.my_show").setMethodCallHandler { call, result ->
+  override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+    GeneratedPluginRegistrant.registerWith(flutterEngine);
+    MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.jkjk.my_show").setMethodCallHandler { call, result ->
       if (call.method == "backToExit") {
         result.success(backToExit())
       } else {

@@ -123,7 +123,7 @@ class _SettingPageState extends State<SettingPageWidget>{
                                   msg: 'Searching for backup…',
                                   toastLength: Toast.LENGTH_SHORT,
                                   gravity: ToastGravity.BOTTOM,
-                                  timeInSecForIos: 1,
+                                  timeInSecForIosWeb: 1,
                               );
 
                               widget._onRestoreNeed(acc);

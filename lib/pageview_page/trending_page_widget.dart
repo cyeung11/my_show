@@ -62,7 +62,7 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
 
 
   List<Widget> _body(BuildContext context, AsyncSnapshot<ShowListResponse> snapshot) {
-    var bodies = List<Widget>();
+    var bodies = List<Widget>.empty(growable: true);
     bodies.add(
       SafeArea(
           child:  snapshot.connectionState == ConnectionState.done && snapshot.data == null
@@ -331,10 +331,12 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
             SlideTransition(
               position: _animator.animation3,
               child:
-              FlatButton.icon(
-                padding: EdgeInsets.all(10),
+              TextButton.icon(
                 onPressed: () => _onMenuSelect(widget._pageManager.isTv ? TrendingType.TvPopular : TrendingType.MoviePopular),
-                icon: Icon(Icons.star, size: 20, color: (widget._pageManager.currentType == TrendingType.TvPopular || widget._pageManager.currentType == TrendingType.MoviePopular) ? Colors.orangeAccent : Colors.white),
+                icon: Padding(
+                  padding: EdgeInsets.all(10),
+                  child: Icon(Icons.star, size: 20, color: (widget._pageManager.currentType == TrendingType.TvPopular || widget._pageManager.currentType == TrendingType.MoviePopular) ? Colors.orangeAccent : Colors.white),
+                ),
                 label: Text('Popular',
                   style: TextStyle(color: (widget._pageManager.currentType == TrendingType.TvPopular || widget._pageManager.currentType == TrendingType.MoviePopular) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
                 ),
@@ -342,10 +344,12 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
             ),
             SlideTransition(
               position: _animator.animation2,
-              child: FlatButton.icon(
-                padding: EdgeInsets.all(10),
+              child: TextButton.icon(
                 onPressed: () => _onMenuSelect(widget._pageManager.isTv ? TrendingType.TvToday : TrendingType.MoviePlaying),
-                icon: Icon(Icons.new_releases, size: 20, color: (widget._pageManager.currentType == TrendingType.TvToday || widget._pageManager.currentType == TrendingType.MoviePlaying) ? Colors.orangeAccent : Colors.white),
+                icon: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Icon(Icons.new_releases, size: 20, color: (widget._pageManager.currentType == TrendingType.TvToday || widget._pageManager.currentType == TrendingType.MoviePlaying) ? Colors.orangeAccent : Colors.white),
+                ),
                 label: Text(widget._pageManager.isTv ? 'Air Today' :'On Theatre',
                   style: TextStyle(color: (widget._pageManager.currentType == TrendingType.TvToday || widget._pageManager.currentType == TrendingType.MoviePlaying) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
                 ),
@@ -354,10 +358,12 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
             SlideTransition(
               position: _animator.animation2,
               child:
-              FlatButton.icon(
-                padding: EdgeInsets.all(10),
+              TextButton.icon(
                 onPressed: () => _onMenuSelect(widget._pageManager.isTv ? TrendingType.TvTopRate : TrendingType.TvTopRate),
-                icon: Icon(Icons.thumb_up, size: 20, color: (widget._pageManager.currentType == TrendingType.TvTopRate || widget._pageManager.currentType == TrendingType.MovieTopRate) ? Colors.orangeAccent : Colors.white),
+                icon: Padding(
+                  padding: EdgeInsets.all(10),
+                  child: Icon(Icons.thumb_up, size: 20, color: (widget._pageManager.currentType == TrendingType.TvTopRate || widget._pageManager.currentType == TrendingType.MovieTopRate) ? Colors.orangeAccent : Colors.white),
+                ),
                 label: Text("Top Rated",
                   style: TextStyle(color: (widget._pageManager.currentType == TrendingType.TvTopRate || widget._pageManager.currentType == TrendingType.MovieTopRate) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
                 ),
@@ -366,11 +372,13 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
             SlideTransition(
               position: _animator.animation1,
               child:
-              FlatButton.icon(
-                padding: EdgeInsets.all(10),
+              TextButton.icon(
                 onPressed: () => _onMenuSelect(widget._pageManager.isTv ? TrendingType.TvOnAir : TrendingType.MovieUpcoming),
-                icon: Icon(widget._pageManager.isTv ?Icons.play_arrow : Icons.calendar_today, size: 20,
-                    color: (widget._pageManager.currentType == TrendingType.TvOnAir || widget._pageManager.currentType == TrendingType.MovieUpcoming) ? Colors.orangeAccent : Colors.white),
+                icon: Padding(
+                  padding: EdgeInsets.all(10),
+                  child: Icon(widget._pageManager.isTv ?Icons.play_arrow : Icons.calendar_today, size: 20,
+                      color: (widget._pageManager.currentType == TrendingType.TvOnAir || widget._pageManager.currentType == TrendingType.MovieUpcoming) ? Colors.orangeAccent : Colors.white),
+                ),
                 label: Text(widget._pageManager.isTv ? 'On the Air' : 'Upcoming' ,
                   style: TextStyle(color: (widget._pageManager.currentType == TrendingType.TvOnAir || widget._pageManager.currentType == TrendingType.MovieUpcoming) ? Colors.orangeAccent : Colors.white, fontSize: 20,),
                 ),
@@ -398,7 +406,7 @@ class _TrendingPageState extends State<TrendingPageWidget> with TickerProviderSt
       ),
     );
 
-    Scaffold.of(context).showSnackBar(snackBar);
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
   _reload(BuildContext context) {

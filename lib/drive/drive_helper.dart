@@ -67,8 +67,8 @@ class DriveHelper {
 
   downloadFileAsString(String fileId, ValueChanged<String> onDownload) async {
     GoogleApis.Media file = await _drive.files
-        .get(fileId, downloadOptions: GoogleApis.DownloadOptions.FullMedia);
-    var data = List<int>();
+        .get(fileId, downloadOptions: GoogleApis.DownloadOptions.fullMedia);
+    var data = List<int>.empty(growable: true);
     file.stream.listen((d){
       data.addAll(d);
     }, onDone: (){
@@ -83,7 +83,7 @@ class _GoogleHttpClient extends IOClient {
   _GoogleHttpClient(this._headers) : super();
 
   @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) =>
+  Future<IOStreamedResponse> send(http.BaseRequest request) =>
       super.send(request..headers.addAll(_headers));
 
   @override
