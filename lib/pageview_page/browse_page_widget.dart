@@ -6,10 +6,10 @@ import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/movie_list_response.dart';
 import 'package:my_show/pageview_page/page_manager/browse_page_manager.dart';
 import 'package:my_show/pageview_page/show_widget_builder.dart';
+import 'package:my_show/state/genre_state_model.dart';
 import 'package:my_show/widget/select_dialog.dart';
 import 'package:numberpicker/numberpicker.dart';
-
-import '../storage/pref_helper.dart';
+import 'package:provider/provider.dart';
 
 class BrowsePageWidget extends StatefulWidget{
 
@@ -329,10 +329,12 @@ class _BrowsePageState extends State<BrowsePageWidget> {
         showDialog<Genre>(context: context,
             barrierDismissible: true,
             builder: (context){
-              return SelectDialog<Genre>(
-                selectables: widget._pageManager.isTv ? PrefHelper.instance.tvGenres : PrefHelper.instance.movieGenres,
-                currentSelect: widget._pageManager.genre,
-              );
+              return Consumer<GenreStateModel>(builder: (context, value, _){
+                return SelectDialog<Genre>(
+                  selectables: widget._pageManager.isTv ? value.getTvGenre() : value.getMovieGenre(),
+                  currentSelect: widget._pageManager.genre,
+                );
+              });
             }
         ).then((genre){
           if (genre != null && genre != widget._pageManager.genre) {

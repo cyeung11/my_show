@@ -4,6 +4,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:my_show/state/genre_state_model.dart';
+import 'package:my_show/state/movie_state_model.dart';
+import 'package:my_show/state/tv_state_model.dart';
+import 'package:provider/provider.dart';
 import 'package:my_show/page/home_page.dart';
 import 'package:my_show/storage/database_helper.dart';
 import 'package:my_show/storage/pref_helper.dart';
@@ -17,7 +21,16 @@ void main() async {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]).then((_){
       PrefHelper.init().then((pref){
         DatabaseHelper.initDb().then((_){
-          runApp(MyApp());
+          runApp(
+              MultiProvider(
+              providers: [
+                ChangeNotifierProvider(create: (_) => GenreStateModel()),
+                ChangeNotifierProvider(create: (_) => MovieStateModel()),
+                ChangeNotifierProvider(create: (_) => TvStateModel())
+              ],
+                child: MyApp(),
+              )
+          );
         });
       });
     });

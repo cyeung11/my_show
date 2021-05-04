@@ -62,7 +62,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
         // Auto back if last back up is more than 6 hours old
         widget._authMan.getAccount(silently: true).then((acc) {
           if (acc != null) {
-            ShowBackupHelper.backup(acc);
+            ShowBackupHelper.backup(context, acc);
           }
         });
       }
@@ -208,7 +208,7 @@ class HomePageState extends State<HomePage> with WidgetsBindingObserver {
               child: Text('OK',
                 style: TextStyle(color: Colors.blueGrey),),
               onPressed: (){
-                PrefHelper.instance.restore(backup);
+                PrefHelper.instance.restore(context, backup);
                 Navigator.of(context).pop();
               },
             ),

@@ -5,7 +5,8 @@ import 'package:my_show/model/show.dart';
 import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/page/movie_details_page.dart';
 import 'package:my_show/page/tv_details_page.dart';
-import 'package:my_show/storage/pref_helper.dart';
+import 'package:my_show/state/genre_state_model.dart';
+import 'package:provider/provider.dart';
 
 import '../asset_path.dart';
 
@@ -42,24 +43,27 @@ class ShowWidgetBuilder {
     entryDetails.add(SizedBox(height: 8));
 
     if (!forPeople) {
-      List<Genre> genreList = show.isMovie() ? PrefHelper.instance.movieGenres : PrefHelper.instance.tvGenres;
-      var stringBuilder = StringBuffer();
-      show.genres.forEach((g){
-        var match = genreList.firstWhere((all) => all.id == g, orElse: () => null);
-        if (match?.name?.isNotEmpty == true) {
-          if (stringBuilder.isNotEmpty) {
-            stringBuilder.write(', ');
-          }
-          stringBuilder.write(match.name);
-        }
-      });
-      entryDetails.add(Text(stringBuilder.toString(),
-          style: TextStyle(
-            fontSize: 12.0,
-            color: Colors.grey,
-            fontStyle: FontStyle.italic,
-          )
-      ));
+      // Consumer<GenreStateModel>
+      entryDetails.add(
+        Consumer<GenreStateModel>(builder: (context, value, _){
+
+          List<Genre> genreList = show.isMovie() ? value.getMovieGenre() : value.getTvGenre();
+          var stringBuilder = StringBuffer();
+          show.genres.forEach((g){
+            var match = genreList.firstWhere((all) => all.id == g, orElse: () => null);
+            if (match?.name?.isNotEmpty == true) {
+              if (stringBuilder.isNotEmpty) {
+                stringBuilder.write(', ');
+              }
+              stringBuilder.write(match.name);
+            }
+          });
+
+          return Text(stringBuilder.toString(),
+              style: TextStyle(fontSize: 12.0, color: Colors.grey, fontStyle: FontStyle.italic,)
+          );
+        })
+      );
       entryDetails.add(SizedBox(height: 5));
     }
 

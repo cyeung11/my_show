@@ -6,8 +6,8 @@ import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/credit_response.dart';
 import 'package:my_show/page/detail_page.dart';
-
-import '../storage/pref_helper.dart';
+import 'package:my_show/state/tv_state_model.dart';
+import 'package:provider/provider.dart';
 
 class TvDetailPage extends StatefulWidget{
   final int id;
@@ -26,8 +26,6 @@ class _TvPageState extends DetailPageState<TvDetailPage>{
 
   CreditResponse _credit;
 
-  var _isFav;
-
   @override
   String getDetailPath() {
     return GET_TV_DETAIL + widget.id.toString();
@@ -36,7 +34,6 @@ class _TvPageState extends DetailPageState<TvDetailPage>{
   @override
   void initState() {
     super.initState();
-    _isFav = PrefHelper.instance.isTvSaved(widget.id);
     if (_credit == null) {
       getCredit(true, widget.id).then((response){
         if (response?.cast?.isNotEmpty == true) {
@@ -76,21 +73,20 @@ class _TvPageState extends DetailPageState<TvDetailPage>{
   }
 
   Widget _headerImage(TvDetails tv){
-    return buildHeaderImage(tv, IconButton(
-        icon: Icon(_isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
-        onPressed: () {
-          var future = _isFav
-              ? PrefHelper.instance.removeTv(widget.id)
-              : PrefHelper.instance.addTv(tv);
-          future.then((result) {
-            if (result) {
-              setState(() {
-                _isFav = !_isFav;
-              });
+    return buildHeaderImage(
+      tv,
+      Consumer<TvStateModel>(builder: (context, value, _){
+        bool isFav = value.isTvSaved(widget.id);
+        return IconButton(
+            icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
+            onPressed: () {
+              isFav
+                  ? value.removeTv(widget.id)
+                  : value.addTv(tv);
             }
-          });
-        }
-    ));
+        );
+      })
+    );
   }
 
   Widget _buildDetails(TvDetails detail){

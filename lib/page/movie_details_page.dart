@@ -7,9 +7,10 @@ import 'package:my_show/network/api_constant.dart';
 import 'package:my_show/network/network_call.dart';
 import 'package:my_show/network/response/credit_response.dart';
 import 'package:my_show/page/detail_page.dart';
+import 'package:my_show/state/movie_state_model.dart';
+import 'package:provider/provider.dart';
 
 import '../asset_path.dart';
-import '../storage/pref_helper.dart';
 
 class MovieDetailPage extends StatefulWidget{
   final int id;
@@ -27,9 +28,6 @@ class _MovieDetailPageState extends DetailPageState<MovieDetailPage>{
 
   CreditResponse _credit;
 
-  var _isFav;
-
-
   @override
   String getDetailPath() {
     return GET_MOVIE_DETAIL + widget.id.toString();
@@ -38,7 +36,6 @@ class _MovieDetailPageState extends DetailPageState<MovieDetailPage>{
   @override
   void initState() {
     super.initState();
-    _isFav = PrefHelper.instance.isMovieSaved(widget.id);
     if (_credit == null) {
       getCredit(false, widget.id).then((response){
         if (response != null) {
@@ -77,21 +74,20 @@ class _MovieDetailPageState extends DetailPageState<MovieDetailPage>{
   }
 
   Widget _headerImage(MovieDetails detail){
-    return buildHeaderImage(detail, IconButton(
-      icon: Icon(_isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
-      onPressed: (){
-        var future = _isFav
-            ? PrefHelper.instance.removeMovie(widget.id)
-            : PrefHelper.instance.addMovie(detail);
-        future.then((result){
-          if (result) {
-            setState(() {
-              _isFav = !_isFav;
-            });
-          }
-        });
-      },
-    ));
+    return buildHeaderImage(
+        detail,
+        Consumer<MovieStateModel>(builder: (context, value, _){
+          bool isFav = value.isMovieSaved(widget.id);
+          return IconButton(
+              icon: Icon(isFav ? Icons.favorite : Icons.favorite_border, color: Colors.white, size: 24,),
+              onPressed: () {
+                isFav
+                    ? value.removeMovie(widget.id)
+                    : value.addMovie(detail);
+              }
+          );
+        })
+    );
   }
 
   Widget _buildDetails(MovieDetails detail){

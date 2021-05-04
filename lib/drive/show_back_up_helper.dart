@@ -1,10 +1,14 @@
 import 'dart:convert';
 
+import 'package:flutter/widgets.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:my_show/drive/drive_helper.dart';
 import 'package:my_show/model/movie_details.dart';
 import 'package:my_show/model/tv_details.dart';
+import 'package:my_show/state/movie_state_model.dart';
+import 'package:my_show/state/tv_state_model.dart';
 import 'package:my_show/storage/pref_helper.dart';
+import 'package:provider/provider.dart';
 
 class ShowBackupHelper{
   
@@ -16,15 +20,15 @@ class ShowBackupHelper{
     return await driveHelper.createFolder(FOLDER_NAME_BACKUP);
   }
   
-  static Future<bool> backup(GoogleSignInAccount acc) async {
+  static Future<bool> backup(BuildContext context, GoogleSignInAccount acc) async {
     var helper = await _assertInit(acc);
     var folderId = await _createFolder(helper);
 
-    var m = await PrefHelper.instance.savedMovie;
+    var m = await Provider.of<MovieStateModel>(context, listen: false).getUpdateWatchMovie();
     var savedMovie = jsonEncode(m.map((movie) => jsonEncode(movie)).toList());
     var movieId = await helper.uploadStringAsFile(FILE_NAME_MOVIE, folderId, savedMovie);
 
-    var t = await PrefHelper.instance.watchTv;
+    var t = await Provider.of<TvStateModel>(context, listen: false).getUpdatedWatchTv();
     var savedTv = jsonEncode(t.map((tv) => jsonEncode(tv)).toList());
     var tvId = await helper.uploadStringAsFile(FILE_NAME_TV, folderId, savedTv);
 

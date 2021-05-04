@@ -163,7 +163,7 @@ class _SettingPageState extends State<SettingPageWidget>{
               ),
               onTap: switchValue ? (){
                 widget._authMan.getAccount().then((acc){
-                  ShowBackupHelper.backup(acc);
+                  ShowBackupHelper.backup(context, acc);
                 });
               } : null,
             ),

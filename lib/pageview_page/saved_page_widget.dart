@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:my_show/model/movie_details.dart';
 import 'package:my_show/model/tv_details.dart';
 import 'package:my_show/model/watch_progress.dart';
-import 'package:my_show/network/network_call.dart';
 import 'package:my_show/page/movie_details_page.dart';
 import 'package:my_show/page/tv_details_page.dart';
 import 'package:my_show/pageview_page/page_manager/saved_page_manager.dart';
 import 'package:my_show/pageview_page/show_widget_builder.dart';
+import 'package:my_show/state/movie_state_model.dart';
+import 'package:my_show/state/tv_state_model.dart';
 import 'package:my_show/widget/episode_select_dialog.dart';
-
-import '../storage/pref_helper.dart';
+import 'package:provider/provider.dart';
 
 class SavedPageWidget extends StatefulWidget{
 
@@ -27,59 +27,14 @@ class _SavedPageState extends State<SavedPageWidget> {
 
   ScrollController _scrollController;
 
-  List<TvDetails> savedTv;
   List<MovieDetails> savedMovie;
 
   @override
   void initState() {
     super.initState();
-    _updateTv();
-    _updateMovie();
     _scrollController = ScrollController(initialScrollOffset: widget._pageManager.scrollOffsetToRestore);
-  }
-
-  _updateTv(){
-    PrefHelper.instance.watchTv.then((tvs){
-      setState(() {
-        savedTv = tvs;
-      });
-
-      tvs.forEach((t){
-        if (t.isExpired) {
-          getTVDetail(t.id).then((result){
-            result.insert();
-            var index = savedTv.indexWhere((saved) => t.id == saved.id);
-            if (index != -1) {
-              setState(() {
-                savedTv[index] = result;
-              });
-            }
-          });
-        }
-      });
-    });
-  }
-
-  _updateMovie(){
-    PrefHelper.instance.savedMovie.then((movies){
-      setState(() {
-        savedMovie = movies;
-      });
-
-      movies.forEach((t){
-        if (t.isExpired) {
-          getMovieDetail(t.id).then((result){
-            result.insert();
-            var index = savedMovie.indexWhere((saved) => t.id == saved.id);
-            if (index != -1) {
-              setState(() {
-                savedMovie[index] = result;
-              });
-            }
-          });
-        }
-      });
-    });
+    Provider.of<TvStateModel>(context, listen: false).getUpdatedWatchTv();
+    Provider.of<MovieStateModel>(context, listen: false).getUpdateWatchMovie();
   }
 
   @override
@@ -90,7 +45,7 @@ class _SavedPageState extends State<SavedPageWidget> {
       body: Column(
         children: <Widget>[
           Expanded(
-            child: _savedList(context, widget._pageManager.isTv),
+            child: widget._pageManager.isTv ? _savedTvList(context) : _savedMovieList(context),
           )
         ],
       ),
@@ -138,62 +93,96 @@ class _SavedPageState extends State<SavedPageWidget> {
     );
   }
 
-  Widget _savedList(BuildContext context, bool isTv){
-    Map<int, dynamic> data = (isTv ? savedTv?.asMap() : savedMovie?.asMap()) ?? Map();
-    if (data.isEmpty) {
-      return Center(
-        child: Wrap(
-          spacing: 15,
-          direction: Axis.vertical,
-          children: <Widget>[
-            Text('Nothing yet :(',
-                style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey
-                )
-            ),
-            GestureDetector(
-              child: Padding(
-                padding: EdgeInsets.all(7.5),
-                child: Wrap(
-                  spacing: 3,
-                  direction: Axis.horizontal,
-                  children: <Widget>[
-                    Icon(Icons.add, color: Colors.redAccent, size: 16),
-                    Text('add item',
-                        style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.redAccent
-                        )
-                    )
-                  ],
-                ),
+  Widget _emptyWidget(BuildContext context) {
+    return Center(
+      child: Wrap(
+        spacing: 15,
+        direction: Axis.vertical,
+        children: <Widget>[
+          Text('Nothing yet :(',
+              style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey
+              )
+          ),
+          GestureDetector(
+            child: Padding(
+              padding: EdgeInsets.all(7.5),
+              child: Wrap(
+                spacing: 3,
+                direction: Axis.horizontal,
+                children: <Widget>[
+                  Icon(Icons.add, color: Colors.redAccent, size: 16),
+                  Text('add item',
+                      style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.redAccent
+                      )
+                  )
+                ],
               ),
-              onTap: widget._onSearch,
-            )
-          ],
-        ),
-      );
-    } else {
-      return NotificationListener(
-        child: ListView(
-            controller: _scrollController,
-            children: ListTile.divideTiles(
-                color: Colors.white30,
-                context: context,
-                tiles: data.keys.map((int index) {
-                  return isTv ? _tvEntry(context, data[index] as TvDetails) : _movieEntry(context, data[index] as MovieDetails);
-                })
-            ).toList()
-        ),
-        onNotification: (notification){
-          if (notification is ScrollNotification) {
-            widget._pageManager.scrollOffsetToRestore = notification.metrics.pixels;
-          }
-          return false;
-        },
-      );
-    }
+            ),
+            onTap: widget._onSearch,
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _savedTvList(BuildContext context){
+    return Consumer<TvStateModel>(builder: (context, value, _){
+      List<TvDetails> data = value.watchTv;
+      if (data.isEmpty) {
+        return _emptyWidget(context);
+      } else {
+        return NotificationListener(
+          child: ListView(
+              controller: _scrollController,
+              children: ListTile.divideTiles(
+                  color: Colors.white30,
+                  context: context,
+                  tiles: data.map((TvDetails detail) {
+                    return _tvEntry(context, detail);
+                  })
+              ).toList()
+          ),
+          onNotification: (notification){
+            if (notification is ScrollNotification) {
+              widget._pageManager.scrollOffsetToRestore = notification.metrics.pixels;
+            }
+            return false;
+          },
+        );
+      }
+    });
+  }
+
+  Widget _savedMovieList(BuildContext context){
+    return Consumer<MovieStateModel>(builder: (context, value, _){
+      List<MovieDetails> data = value.watchMovie;
+      if (data.isEmpty) {
+        return _emptyWidget(context);
+      } else {
+        return NotificationListener(
+          child: ListView(
+              controller: _scrollController,
+              children: ListTile.divideTiles(
+                  color: Colors.white30,
+                  context: context,
+                  tiles: data.map((MovieDetails detail) {
+                    return _movieEntry(context, detail);
+                  })
+              ).toList()
+          ),
+          onNotification: (notification){
+            if (notification is ScrollNotification) {
+              widget._pageManager.scrollOffsetToRestore = notification.metrics.pixels;
+            }
+            return false;
+          },
+        );
+      }
+    });
   }
 
   Widget _posterImage(BuildContext context, bool isTv, String path, int id){
@@ -241,10 +230,10 @@ class _SavedPageState extends State<SavedPageWidget> {
         ));
   }
 
-  Widget _movieEntry(BuildContext context, MovieDetails movie){
+  Widget _movieEntry(BuildContext buildContext, MovieDetails movie){
     List<Widget> widgetList = List<Widget>.empty(growable: true);
     widgetList.add(SizedBox(width: 12,));
-    widgetList.add(_posterImage(context, false, movie.posterPath, movie.id));
+    widgetList.add(_posterImage(buildContext, false, movie.posterPath, movie.id));
     widgetList.add(SizedBox(width: 8,));
     widgetList.add(
         Expanded(
@@ -265,36 +254,32 @@ class _SavedPageState extends State<SavedPageWidget> {
     );
     widgetList.add(SizedBox(width: 5,));
     if (widget._pageManager.deleteMode) {
-      widgetList.add(_deleteModeDeleteButton(context, false, movie.id));
+      widgetList.add(_deleteModeDeleteButton(buildContext, false, movie.id));
       return Row(children: widgetList,);
     }
     return Builder(
-      builder: (BuildContext context){
-        return _dismissible(context, (_){
-          PrefHelper.instance.removeMovie(movie.id).whenComplete((){
-            _updateMovie();
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
+      builder: (BuildContext c){
+        return _dismissible(c, (_){
+          Provider.of<MovieStateModel>(c, listen: false).removeMovie(movie.id);
+          ScaffoldMessenger.of(c).showSnackBar(
               SnackBar(content: Text('Item removed'),
                 action: SnackBarAction(
                   label: 'Undo',
                   onPressed: () {
-                    PrefHelper.instance.addMovie(movie).whenComplete((){
-                      _updateMovie();
-                    });
+                    Provider.of<MovieStateModel>(context, listen: false).addMovie(movie);
                   },
                 ),
               )
           );
-        }, wrapWithInkWellToDetail(context, Row(children: widgetList,), false, movie.id), movie.id.toString());
+        }, wrapWithInkWellToDetail(c, Row(children: widgetList,), false, movie.id), movie.id.toString());
       },
     );
   }
 
-  Widget _tvEntry(BuildContext context, TvDetails tv){
+  Widget _tvEntry(BuildContext buildContext, TvDetails tv){
     List<Widget> widgetList = List<Widget>.empty(growable: true);
     widgetList.add(SizedBox(width: 12,));
-    widgetList.add(_posterImage(context, true, tv.posterPath, tv.id));
+    widgetList.add(_posterImage(buildContext, true, tv.posterPath, tv.id));
     widgetList.add(SizedBox(width: 8,));
     widgetList.add(
         Expanded(
@@ -306,7 +291,7 @@ class _SavedPageState extends State<SavedPageWidget> {
                 ),
                 SizedBox(height: 5,),
                 _nextEpisodeText(tv),
-                _progressRow(context, tv)
+                _progressRow(buildContext, tv)
               ],
             )
         )
@@ -315,24 +300,20 @@ class _SavedPageState extends State<SavedPageWidget> {
         SizedBox(width: 5,)
     );
     if (widget._pageManager.deleteMode) {
-      widgetList.add(_deleteModeDeleteButton(context, true, tv.id));
+      widgetList.add(_deleteModeDeleteButton(buildContext, true, tv.id));
       return Row(children: widgetList,);
     }
     return Builder(
-        builder: (BuildContext context) {
-          return _dismissible(context,
+        builder: (BuildContext c) {
+          return _dismissible(c,
                   (_) {
-                PrefHelper.instance.removeTv(tv.id).whenComplete((){
-                  _updateTv();
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
+                Provider.of<TvStateModel>(c, listen: false).removeTv(tv.id);
+                ScaffoldMessenger.of(c).showSnackBar(
                     SnackBar(content: Text('Item removed'),
                       action: SnackBarAction(
                         label: 'Undo',
                         onPressed: () {
-                          PrefHelper.instance.addTv(tv).whenComplete((){
-                            _updateTv();
-                          });
+                          Provider.of<TvStateModel>(context, listen: false).addTv(tv);
                         },
                       ),
                     )
@@ -400,13 +381,9 @@ class _SavedPageState extends State<SavedPageWidget> {
                 onPressed: (){
                   Navigator.of(context).pop();
                   if (isTv) {
-                    PrefHelper.instance.removeTv(id).whenComplete((){
-                      _updateTv();
-                    });
+                    Provider.of<TvStateModel>(context, listen: false).removeTv(id);
                   } else {
-                    PrefHelper.instance.removeMovie(id).whenComplete((){
-                      _updateMovie();
-                    });
+                    Provider.of<MovieStateModel>(context, listen: false).removeMovie(id);
                   }
                 },
               ),
@@ -429,10 +406,8 @@ class _SavedPageState extends State<SavedPageWidget> {
             onPressed: isFirst
                 ? null
                 : (){
-              setState(() {
-                tv.progress = tv.progress.previous(tv.seasons);
-                tv.insert();
-              });
+              tv.progress = tv.progress.previous(tv.seasons);
+              Provider.of<TvStateModel>(context, listen: false).addTv(tv);
             },
           ));
     }
@@ -472,10 +447,8 @@ class _SavedPageState extends State<SavedPageWidget> {
             onPressed: isLast
                 ? null
                 : (){
-              setState(() {
-                tv.progress = tv.progress.next(tv.seasons);
-                tv.insert();
-              });
+              tv.progress = tv.progress.next(tv.seasons);
+              Provider.of<TvStateModel>(context, listen: false).addTv(tv);
             },
           )
       );
@@ -495,10 +468,8 @@ class _SavedPageState extends State<SavedPageWidget> {
         }
     ).then((progress){
       if (progress != null) {
-        setState(() {
-          tv.progress = progress;
-          tv.insert();
-        });
+        tv.progress = progress;
+        Provider.of<TvStateModel>(context, listen: false).addTv(tv);
       }
     });
   }
